@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Ticket, Loader2 } from "lucide-react";
+import { Loader2, ArrowRight, ShieldCheck, Zap } from "lucide-react";
 import { toast } from "sonner";
+import { NextSMLogo } from "@/components/brand/NextSMLogo";
 
 function safeNext(next: unknown): string | null { if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) return null; return next; }
 const TITULO = "Acesso ao portal — NextSM";
@@ -59,5 +60,62 @@ function AuthPage() {
     toast.success("Conta criada! Verifique seu e-mail se necessário.");
   }
 
-  return <div className="grid min-h-screen place-items-center bg-muted/30 px-4"><div className="w-full max-w-md"><div className="mb-6 flex flex-col items-center justify-center gap-2 text-center font-semibold"><div className="flex items-center gap-2"><div className="grid h-9 w-9 place-items-center rounded-md bg-primary text-primary-foreground"><Ticket className="h-5 w-5" /></div><span className="text-lg">NextSM — Service Desk</span></div><h1 className="text-xl font-bold tracking-tight">Acesso ao portal de chamados</h1></div><Card><CardHeader><CardTitle>Acesso ao portal</CardTitle><CardDescription>Entre com seu e-mail corporativo.</CardDescription></CardHeader><CardContent><Tabs defaultValue="login"><TabsList className="grid w-full grid-cols-2"><TabsTrigger value="login">Entrar</TabsTrigger><TabsTrigger value="register">Criar conta</TabsTrigger></TabsList><TabsContent value="login"><form className="space-y-4 pt-4" onSubmit={handleLogin}><div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" type="password" required value={loginPass} onChange={e => setLoginPass(e.target.value)} /></div><Button type="submit" className="w-full" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar</Button></form></TabsContent><TabsContent value="register"><form className="space-y-4 pt-4" onSubmit={handleSignup}><div className="space-y-2"><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" required value={nome} onChange={e => setNome(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" value={depto} onChange={e => setDepto(e.target.value)} placeholder="Ex.: Comercial" /></div><div className="space-y-2"><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" type="email" required value={regEmail} onChange={e => setRegEmail(e.target.value)} /></div><div className="space-y-2"><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" type="password" required minLength={6} value={regPass} onChange={e => setRegPass(e.target.value)} /></div><Button type="submit" className="w-full" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar conta</Button></form></TabsContent></Tabs></CardContent></Card></div></div>;
+  return (
+    <div className="nextsm-auth min-h-screen overflow-hidden">
+      <div className="nextsm-auth__orb nextsm-auth__orb--one" />
+      <div className="nextsm-auth__orb nextsm-auth__orb--two" />
+      <div className="nextsm-auth__grid" />
+      <div className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[1fr_460px] lg:px-12">
+        <section className="hidden lg:block">
+          <NextSMLogo inverse className="mb-10" />
+          <div className="max-w-xl">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-blue-300">Service Management Platform</p>
+            <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight text-white xl:text-6xl">Estrutura inteligente para uma operação que não para.</h1>
+            <p className="mt-6 max-w-lg text-base leading-7 text-slate-300">Centralize atendimento, processos, conhecimento e automação em uma experiência de Service Management moderna.</p>
+          </div>
+          <div className="mt-10 flex gap-3">
+            <div className="nextsm-auth__feature"><Zap className="h-4 w-4 text-blue-300" /><span>Automação</span></div>
+            <div className="nextsm-auth__feature"><ShieldCheck className="h-4 w-4 text-blue-300" /><span>Governança</span></div>
+            <div className="nextsm-auth__feature"><ArrowRight className="h-4 w-4 text-blue-300" /><span>Evolução</span></div>
+          </div>
+        </section>
+
+        <div className="w-full max-w-md justify-self-center lg:max-w-[460px]">
+          <div className="mb-7 flex justify-center lg:hidden"><NextSMLogo inverse /></div>
+          <Card className="nextsm-auth__card border-white/10 bg-white/[0.97] shadow-2xl shadow-black/20">
+            <CardHeader className="space-y-3 px-7 pt-7">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-600"><span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Acesso seguro</div>
+              <CardTitle className="text-2xl tracking-tight text-slate-950">Bem-vindo à NextSM</CardTitle>
+              <CardDescription className="text-slate-500">Entre com seu e-mail corporativo para acessar o portal.</CardDescription>
+            </CardHeader>
+            <CardContent className="px-7 pb-7">
+              <Tabs defaultValue="login">
+                <TabsList className="grid h-11 w-full grid-cols-2 bg-slate-100 p-1">
+                  <TabsTrigger value="login">Entrar</TabsTrigger>
+                  <TabsTrigger value="register">Criar conta</TabsTrigger>
+                </TabsList>
+                <TabsContent value="login">
+                  <form className="space-y-5 pt-5" onSubmit={handleLogin}>
+                    <div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="voce@empresa.com" className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" type="password" required value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="••••••••" className="h-11 bg-white" /></div>
+                    <Button type="submit" className="h-11 w-full bg-[#2563EB] text-white shadow-lg shadow-blue-600/20 hover:bg-[#1D4ED8]" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar <ArrowRight className="ml-auto h-4 w-4" /></Button>
+                  </form>
+                </TabsContent>
+                <TabsContent value="register">
+                  <form className="space-y-4 pt-5" onSubmit={handleSignup}>
+                    <div className="space-y-2"><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" required value={nome} onChange={e => setNome(e.target.value)} className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" value={depto} onChange={e => setDepto(e.target.value)} placeholder="Ex.: Comercial" className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" type="email" required value={regEmail} onChange={e => setRegEmail(e.target.value)} className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" type="password" required minLength={6} value={regPass} onChange={e => setRegPass(e.target.value)} className="h-11 bg-white" /></div>
+                    <Button type="submit" className="h-11 w-full bg-[#2563EB] text-white shadow-lg shadow-blue-600/20 hover:bg-[#1D4ED8]" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar conta <ArrowRight className="ml-auto h-4 w-4" /></Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          <p className="mt-5 text-center text-xs text-slate-400">NextSM • Service Management Platform</p>
+        </div>
+      </div>
+    </div>
+  );
 }
