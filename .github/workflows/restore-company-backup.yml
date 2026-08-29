@@ -28,7 +28,8 @@ jobs:
 
       - name: Inspect backup for Auth users
         run: |
-          /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -E 'auth[.]users|auth[.]identities' || true
+          echo '--- Auth objects in backup ---'
+          /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -E 'TABLE DATA auth[.]users|TABLE DATA auth[.]identities|TABLE auth[.]users|TABLE auth[.]identities' || true
 
       - name: Prepare target database
         env:
@@ -40,21 +41,26 @@ jobs:
           TRUNCATE TABLE auth.users CASCADE;
           SQL
 
-      - name: Restore Auth users from backup
+      - name: Restore Auth users from backup when present
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          /usr/lib/postgresql/18/bin/pg_restore \
-            --host=aws-0-ca-central-1.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.byuvcguynctqftnoylno \
-            --dbname=postgres \
-            --table=auth.users \
-            --data-only \
-            --no-owner \
-            --no-acl \
-            --exit-on-error \
-            /tmp/servicedesk-mundovem.backup
+          set -e
+          if /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -qE 'TABLE DATA auth[.]users'; then
+            /usr/lib/postgresql/18/bin/pg_restore \
+              --host=aws-0-ca-central-1.pooler.supabase.com \
+              --port=5432 \
+              --username=postgres.byuvcguynctqftnoylno \
+              --dbname=postgres \
+              --table=auth.users \
+              --data-only \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /tmp/servicedesk-mundovem.backup
+          else
+            echo 'Backup does not contain auth.users data; public references will be handled with placeholder Auth users.'
+          fi
           /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
             -v ON_ERROR_STOP=1 \
             -c 'SELECT count(*) AS restored_auth_users FROM auth.users;'
@@ -74,21 +80,87 @@ jobs:
           /usr/lib/postgresql/18/bin/pg_restore "${DB_ARGS[@]}" --section=pre-data /tmp/servicedesk-mundovem.backup
           /usr/lib/postgresql/18/bin/pg_restore "${DB_ARGS[@]}" --section=data /tmp/servicedesk-mundovem.backup
 
-      - name: Restore Auth identities
+      - name: Create placeholder Auth users for orphaned public references
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          /usr/lib/postgresql/18/bin/pg_restore \
-            --host=aws-0-ca-central-1.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.byuvcguynctqftnoylno \
-            --dbname=postgres \
-            --table=auth.identities \
-            --data-only \
-            --no-owner \
-            --no-acl \
-            --exit-on-error \
-            /tmp/servicedesk-mundovem.backup || true
+          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
+          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          DECLARE
+            r record;
+            sql text;
+          BEGIN
+            FOR r IN
+              SELECT
+                n.nspname AS schema_name,
+                c.relname AS table_name,
+                a.attname AS column_name
+              FROM pg_constraint fk
+              JOIN pg_class c ON c.oid = fk.conrelid
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+              JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = fk.conkey[1]
+              JOIN pg_class rc ON rc.oid = fk.confrelid
+              JOIN pg_namespace rn ON rn.oid = rc.relnamespace
+              WHERE fk.contype = 'f'
+                AND n.nspname = 'public'
+                AND rn.nspname = 'auth'
+                AND rc.relname = 'users'
+                AND array_length(fk.conkey, 1) = 1
+                AND array_length(fk.confkey, 1) = 1
+            LOOP
+              sql := format($f$
+                INSERT INTO auth.users (
+                  id, aud, role, email, encrypted_password,
+                  email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+                  created_at, updated_at, confirmation_token, recovery_token,
+                  email_change_token_new, email_change, is_sso_user, is_anonymous
+                )
+                SELECT
+                  x.id,
+                  'authenticated',
+                  'authenticated',
+                  'placeholder+' || x.id::text || '@nextsm.local',
+                  '',
+                  now(),
+                  '{}'::jsonb,
+                  '{}'::jsonb,
+                  now(),
+                  now(),
+                  '', '', '', '', false, false
+                FROM (
+                  SELECT DISTINCT %1$I AS id
+                  FROM %2$I.%3$I
+                  WHERE %1$I IS NOT NULL
+                ) x
+                WHERE NOT EXISTS (SELECT 1 FROM auth.users u WHERE u.id = x.id)
+                ON CONFLICT (id) DO NOTHING
+              $f$, r.column_name, r.schema_name, r.table_name);
+              EXECUTE sql;
+            END LOOP;
+          END $$;
+          SQL
+          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS auth_users_after_repair FROM auth.users;'
+
+      - name: Restore Auth identities when present
+        env:
+          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
+        run: |
+          if /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -qE 'TABLE DATA auth[.]identities'; then
+            /usr/lib/postgresql/18/bin/pg_restore \
+              --host=aws-0-ca-central-1.pooler.supabase.com \
+              --port=5432 \
+              --username=postgres.byuvcguynctqftnoylno \
+              --dbname=postgres \
+              --table=auth.identities \
+              --data-only \
+              --no-owner \
+              --no-acl \
+              --exit-on-error \
+              /tmp/servicedesk-mundovem.backup
+          else
+            echo 'Backup does not contain auth.identities data.'
+          fi
 
       - name: Restore public constraints and functions
         env:
@@ -110,8 +182,8 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynoylno sslmode=require'
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" || true
+          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
+          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
           /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS auth_users FROM auth.users;"
           /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_functions FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public';"
 
