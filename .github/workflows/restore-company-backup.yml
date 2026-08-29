@@ -24,90 +24,71 @@ jobs:
           test -n "$BACKUP_URL"
           curl --fail --location --silent --show-error "$BACKUP_URL" -o /tmp/servicedesk-mundovem.backup
           test -s /tmp/servicedesk-mundovem.backup
-          file /tmp/servicedesk-mundovem.backup
 
-      - name: Inspect backup for Auth users
+      - name: Inspect backup
         run: |
           echo '--- Auth objects in backup ---'
-          /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -E 'TABLE DATA auth[.]users|TABLE DATA auth[.]identities|TABLE auth[.]users|TABLE auth[.]identities' || true
+          pg_restore --list /tmp/servicedesk-mundovem.backup | grep -E 'TABLE DATA auth[.]users|TABLE DATA auth[.]identities|TABLE auth[.]users|TABLE auth[.]identities' || true
 
       - name: Prepare target database
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
           DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
+          psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
           CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
           TRUNCATE TABLE auth.users CASCADE;
           SQL
 
-      - name: Restore Auth users from backup when present
+      - name: Restore Auth users when included in backup
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          set -e
-          if /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -qE 'TABLE DATA auth[.]users'; then
-            /usr/lib/postgresql/18/bin/pg_restore \
-              --host=aws-0-ca-central-1.pooler.supabase.com \
-              --port=5432 \
-              --username=postgres.byuvcguynctqftnoylno \
-              --dbname=postgres \
-              --table=auth.users \
-              --data-only \
-              --no-owner \
-              --no-acl \
-              --exit-on-error \
-              /tmp/servicedesk-mundovem.backup
+          if pg_restore --list /tmp/servicedesk-mundovem.backup | grep -qE 'TABLE DATA auth[.]users'; then
+            pg_restore --host=aws-0-ca-central-1.pooler.supabase.com --port=5432 --username=postgres.byuvcguynctqftnoylno --dbname=postgres --table=auth.users --data-only --no-owner --no-acl --exit-on-error /tmp/servicedesk-mundovem.backup
           else
-            echo 'Backup does not contain auth.users data; public references will be handled with placeholder Auth users.'
+            echo 'Backup has no auth.users data; missing IDs will receive placeholders.'
           fi
-          /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
-            -v ON_ERROR_STOP=1 \
-            -c 'SELECT count(*) AS restored_auth_users FROM auth.users;'
+          psql "$DB" -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS auth_users_before_public FROM auth.users;' || true
 
       - name: Reset public schema
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
           DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO anon, authenticated; GRANT ALL ON SCHEMA public TO postgres, service_role; ALTER SCHEMA public OWNER TO postgres; CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;'
+          psql "$DB" -v ON_ERROR_STOP=1 -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO anon, authenticated; GRANT ALL ON SCHEMA public TO postgres, service_role; ALTER SCHEMA public OWNER TO postgres; CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;'
 
       - name: Restore public pre-data and data
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
           DB_ARGS=(--host=aws-0-ca-central-1.pooler.supabase.com --port=5432 --username=postgres.byuvcguynctqftnoylno --dbname=postgres --schema=public --no-owner --no-acl --exit-on-error)
-          /usr/lib/postgresql/18/bin/pg_restore "${DB_ARGS[@]}" --section=pre-data /tmp/servicedesk-mundovem.backup
-          /usr/lib/postgresql/18/bin/pg_restore "${DB_ARGS[@]}" --section=data /tmp/servicedesk-mundovem.backup
+          pg_restore "${DB_ARGS[@]}" --section=pre-data /tmp/servicedesk-mundovem.backup
+          pg_restore "${DB_ARGS[@]}" --section=data /tmp/servicedesk-mundovem.backup
 
-      - name: Create placeholder Auth users for orphaned public references
+      - name: Create Auth placeholders for missing user_id references
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
+          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynoylno sslmode=require'
+          psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           DECLARE
             r record;
             sql text;
           BEGIN
             FOR r IN
-              SELECT
-                n.nspname AS schema_name,
-                c.relname AS table_name,
-                a.attname AS column_name
-              FROM pg_constraint fk
-              JOIN pg_class c ON c.oid = fk.conrelid
+              SELECT n.nspname AS schema_name, c.relname AS table_name, a.attname AS column_name
+              FROM pg_class c
               JOIN pg_namespace n ON n.oid = c.relnamespace
-              JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = fk.conkey[1]
-              JOIN pg_class rc ON rc.oid = fk.confrelid
-              JOIN pg_namespace rn ON rn.oid = rc.relnamespace
-              WHERE fk.contype = 'f'
-                AND n.nspname = 'public'
-                AND rn.nspname = 'auth'
-                AND rc.relname = 'users'
-                AND array_length(fk.conkey, 1) = 1
-                AND array_length(fk.confkey, 1) = 1
+              JOIN pg_attribute a ON a.attrelid = c.oid
+              JOIN pg_type t ON t.oid = a.atttypid
+              WHERE n.nspname = 'public'
+                AND c.relkind IN ('r','p')
+                AND a.attnum > 0
+                AND NOT a.attisdropped
+                AND a.attname = 'user_id'
+                AND t.typname = 'uuid'
             LOOP
               sql := format($f$
                 INSERT INTO auth.users (
@@ -116,18 +97,9 @@ jobs:
                   created_at, updated_at, confirmation_token, recovery_token,
                   email_change_token_new, email_change, is_sso_user, is_anonymous
                 )
-                SELECT
-                  x.id,
-                  'authenticated',
-                  'authenticated',
-                  'placeholder+' || x.id::text || '@nextsm.local',
-                  '',
-                  now(),
-                  '{}'::jsonb,
-                  '{}'::jsonb,
-                  now(),
-                  now(),
-                  '', '', '', '', false, false
+                SELECT x.id, 'authenticated', 'authenticated',
+                  'placeholder+' || x.id::text || '@nextsm.local', '', now(),
+                  '{}'::jsonb, '{}'::jsonb, now(), now(), '', '', '', '', false, false
                 FROM (
                   SELECT DISTINCT %1$I AS id
                   FROM %2$I.%3$I
@@ -140,52 +112,21 @@ jobs:
             END LOOP;
           END $$;
           SQL
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS auth_users_after_repair FROM auth.users;'
-
-      - name: Restore Auth identities when present
-        env:
-          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
-        run: |
-          if /usr/lib/postgresql/18/bin/pg_restore --list /tmp/servicedesk-mundovem.backup | grep -qE 'TABLE DATA auth[.]identities'; then
-            /usr/lib/postgresql/18/bin/pg_restore \
-              --host=aws-0-ca-central-1.pooler.supabase.com \
-              --port=5432 \
-              --username=postgres.byuvcguynctqftnoylno \
-              --dbname=postgres \
-              --table=auth.identities \
-              --data-only \
-              --no-owner \
-              --no-acl \
-              --exit-on-error \
-              /tmp/servicedesk-mundovem.backup
-          else
-            echo 'Backup does not contain auth.identities data.'
-          fi
+          psql "$DB" -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS auth_users_after_repair FROM auth.users;'
 
       - name: Restore public constraints and functions
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          /usr/lib/postgresql/18/bin/pg_restore \
-            --host=aws-0-ca-central-1.pooler.supabase.com \
-            --port=5432 \
-            --username=postgres.byuvcguynctqftnoylno \
-            --dbname=postgres \
-            --schema=public \
-            --section=post-data \
-            --no-owner \
-            --no-acl \
-            --exit-on-error \
-            /tmp/servicedesk-mundovem.backup
+          pg_restore --host=aws-0-ca-central-1.pooler.supabase.com --port=5432 --username=postgres.byuvcguynctqftnoylno --dbname=postgres --schema=public --section=post-data --no-owner --no-acl --exit-on-error /tmp/servicedesk-mundovem.backup
 
       - name: Verify restored database
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
           DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS auth_users FROM auth.users;"
-          /usr/lib/postgresql/18/bin/psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_functions FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public';"
+          psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';"
+          psql "$DB" -v ON_ERROR_STOP=1 -c "SELECT count(*) AS auth_users FROM auth.users;"
 
       - name: Remove backup from runner
         if: always()
