@@ -1,0 +1,3 @@
+# NextSM Supabase GitHub sync marker
+# This file intentionally contains no database migration.
+# The Supabase GitHub integration uses the migrations in ../supabase/migrations.
