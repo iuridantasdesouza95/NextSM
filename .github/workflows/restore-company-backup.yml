@@ -10,12 +10,8 @@ jobs:
     steps:
       - name: Install PostgreSQL 18 client
         run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          curl --fail --silent --show-error https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc >/dev/null
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
-          /usr/lib/postgresql/18/bin/pg_restore --version
 
       - name: Download backup
         env:
@@ -33,6 +29,14 @@ jobs:
           /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
             -v ON_ERROR_STOP=1 \
             -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO anon, authenticated; GRANT ALL ON SCHEMA public TO postgres, service_role; ALTER SCHEMA public OWNER TO postgres;'
+
+      - name: Enable required extensions
+        env:
+          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
+        run: |
+          /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
+            -v ON_ERROR_STOP=1 \
+            -c 'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;'
 
       - name: Restore public schema from backup
         env:
