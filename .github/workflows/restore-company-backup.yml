@@ -26,6 +26,30 @@ jobs:
           test -s /tmp/servicedesk-mundovem.backup
           file /tmp/servicedesk-mundovem.backup
 
+      - name: Enable required extensions
+        env:
+          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
+        run: |
+          /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
+            -v ON_ERROR_STOP=1 \
+            -c 'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;'
+
+      - name: Restore auth users and identities
+        env:
+          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
+        run: |
+          rm -f /tmp/auth-only.sql
+          /usr/lib/postgresql/18/bin/pg_restore \
+            --schema=auth \
+            --section=data \
+            --no-owner \
+            --no-acl \
+            --file=/tmp/auth-only.sql \
+            /tmp/servicedesk-mundovem.backup
+          /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
+            -v ON_ERROR_STOP=0 \
+            -f /tmp/auth-only.sql || true
+
       - name: Reset public schema
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
@@ -33,11 +57,6 @@ jobs:
           /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
             -v ON_ERROR_STOP=1 \
             -c 'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO anon, authenticated; GRANT ALL ON SCHEMA public TO postgres, service_role; ALTER SCHEMA public OWNER TO postgres;'
-
-      - name: Enable required extensions
-        env:
-          PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
-        run: |
           /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
             -v ON_ERROR_STOP=1 \
             -c 'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;'
@@ -66,8 +85,11 @@ jobs:
             -c "SELECT count(*) AS public_tables FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
           /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
             -v ON_ERROR_STOP=1 \
+            -c "SELECT count(*) AS auth_users FROM auth.users;"
+          /usr/lib/postgresql/18/bin/psql "host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require" \
+            -v ON_ERROR_STOP=1 \
             -c "SELECT count(*) AS public_functions FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public';"
 
       - name: Remove backup from runner
         if: always()
-        run: rm -f /tmp/servicedesk-mundovem.backup
+        run: rm -f /tmp/servicedesk-mundovem.backup /tmp/auth-only.sql
