@@ -70,7 +70,7 @@ jobs:
         env:
           PGPASSWORD: ${{ secrets.NEXTSM_DB_PASSWORD }}
         run: |
-          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynoylno sslmode=require'
+          DB='host=aws-0-ca-central-1.pooler.supabase.com port=5432 dbname=postgres user=postgres.byuvcguynctqftnoylno sslmode=require'
           psql "$DB" -v ON_ERROR_STOP=1 <<'SQL'
           DO $$
           DECLARE
