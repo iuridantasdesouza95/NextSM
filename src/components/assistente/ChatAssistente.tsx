@@ -20,7 +20,6 @@ import {
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, FileText, Ticket } from "lucide-react";
-import assistenteLogo from "@/assets/assistente-mundovem.png";
 
 export type Fonte = {
   origem: string;
@@ -33,7 +32,7 @@ type MetadadosMensagem = { fontes?: Fonte[]; confianca?: number };
 
 const SUGESTOES = [
   "Como solicito acesso a um novo sistema?",
-  "Como emitir um relatório no ERP Senior?",
+  "Como registrar um chamado?",
   "Minha impressora não imprime, o que faço?",
   "Qual o prazo de atendimento de um chamado crítico?",
 ];
@@ -112,7 +111,6 @@ export function ChatAssistente({
     transport,
     onError: (erro) => toast.error(erro.message || "Erro ao falar com o assistente"),
     onFinish: () => {
-      // Recarrega o histórico para exibir o título gerado na primeira mensagem.
       void queryClient.invalidateQueries({ queryKey: ["assistente", "conversas"] });
     },
   });
@@ -135,16 +133,13 @@ export function ChatAssistente({
         <ConversationContent className="mx-auto w-full max-w-3xl">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <img
-                src={assistenteLogo}
-                alt="Assistente Mundo Vem"
-                className="h-20 w-20 rounded-2xl object-cover shadow-sm"
-              />
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-2xl font-bold text-primary-foreground shadow-sm">
+                N
+              </div>
               <div>
-                <h2 className="text-lg font-semibold">Olá! Sou o Assistente Mundo Vem</h2>
+                <h2 className="text-lg font-semibold">Olá! Sou o Assistente NextSM</h2>
                 <p className="mt-1 max-w-md text-sm text-muted-foreground">
-                  Tire dúvidas sobre processos internos, ERP Senior, seus chamados e a base de
-                  conhecimento antes de abrir um novo chamado.
+                  Tire dúvidas sobre seus chamados, processos e a base de conhecimento antes de abrir um novo chamado.
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
@@ -181,7 +176,7 @@ export function ChatAssistente({
 
           {status === "submitted" && (
             <div className="px-2 py-3">
-              <Shimmer>Consultando a base interna...</Shimmer>
+              <Shimmer>Consultando a base de conhecimento...</Shimmer>
             </div>
           )}
 
@@ -204,14 +199,14 @@ export function ChatAssistente({
             <PromptInputTextarea
               ref={textareaRef}
               autoFocus
-              placeholder="Pergunte sobre processos, ERP Senior, chamados..."
+              placeholder="Pergunte sobre chamados, processos e a base de conhecimento..."
             />
             <PromptInputFooter className="justify-end">
               <PromptInputSubmit status={status} disabled={carregando && status !== "streaming"} onStop={stop} />
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            As respostas usam a base interna do Mundo Vem. Se algo não for encontrado,{" "}
+            As respostas usam a base de conhecimento do NextSM. Se algo não for encontrado, {" "}
             <Link to="/chamados/novo" className="underline">
               abra um chamado
             </Link>
