@@ -1,1 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 670 250" role="img" aria-labelledby="title desc"><title id="title">NextSM — Service Desk</title><desc id="desc">Logo aprovado da Proposta 3 Premium/Tecnológica.</desc><image href="/brand/nextsm-logo-approved-dark.svg" x="0" y="0" width="670" height="250" preserveAspectRatio="none"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 220" role="img" aria-labelledby="title desc">
+  <title id="title">NextSM — Service Desk</title>
+  <desc id="desc">Logo oficial NextSM para fundos escuros.</desc>
+  <defs>
+    <linearGradient id="blue" x1="28" y1="188" x2="190" y2="30" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0066FF"/><stop offset="1" stop-color="#00D4FF"/></linearGradient>
+    <linearGradient id="sm" x1="470" y1="154" x2="600" y2="55" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0066FF"/><stop offset="1" stop-color="#00D4FF"/></linearGradient>
+    <linearGradient id="n" x1="72" y1="155" x2="158" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0066FF"/><stop offset="1" stop-color="#00D4FF"/></linearGradient>
+  </defs>
+  <g transform="translate(12 19)">
+    <path d="M110 19 L181 60 L181 141 L110 182 L39 141 L39 60 Z" fill="none" stroke="url(#blue)" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M75 143 V77 Q75 70 81 67 Q87 64 92 69 L145 116 V75 Q145 68 152 66 Q160 64 160 73 V143 Q160 151 153 154 Q147 156 141 151 L91 106 V143 Q91 151 83 153 Q75 154 75 143 Z" fill="url(#n)"/>
+    <path d="M77 78 L92 91 L145 68" fill="none" stroke="#00D4FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
+    <circle cx="110" cy="19" r="10" fill="#00D4FF"/><circle cx="181" cy="60" r="10" fill="#00D4FF"/><circle cx="181" cy="141" r="10" fill="#0066FF"/><circle cx="110" cy="182" r="10" fill="#0066FF"/><circle cx="39" cy="141" r="10" fill="#0066FF"/><circle cx="39" cy="60" r="10" fill="#0066FF"/>
+  </g>
+  <g font-family="Sora, Inter, sans-serif" font-weight="700">
+    <text x="235" y="111" font-size="72" letter-spacing="-3.8" fill="#FFFFFF">Next</text>
+    <text x="448" y="111" font-size="72" letter-spacing="-3.8" fill="url(#sm)">SM</text>
+  </g>
+  <g font-family="Sora, Inter, sans-serif">
+    <line x1="235" y1="139" x2="277" y2="139" stroke="#0066FF" stroke-width="3"/>
+    <text x="291" y="144" font-size="16" font-weight="600" letter-spacing="6.2" fill="#FFFFFF">SERVICE DESK</text>
+    <line x1="559" y1="139" x2="601" y2="139" stroke="#00D4FF" stroke-width="3"/>
+  </g>
+</svg>
