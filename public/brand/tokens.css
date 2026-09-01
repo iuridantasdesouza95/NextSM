@@ -14,8 +14,13 @@
   --nextsm-warning: #D97706;
   --nextsm-danger: #DC2626;
   --nextsm-info: #2563EB;
+  --nextsm-font-ui: Inter, ui-sans-serif, system-ui, sans-serif;
+  --nextsm-font-display: Manrope, Inter, ui-sans-serif, system-ui, sans-serif;
   --nextsm-radius-sm: 8px;
   --nextsm-radius-md: 12px;
   --nextsm-radius-lg: 16px;
   --nextsm-radius-pill: 999px;
+  --nextsm-shadow-sm: 0 1px 2px rgba(8,27,51,.04);
+  --nextsm-shadow-md: 0 8px 24px rgba(8,27,51,.08);
+  --nextsm-focus: 0 0 0 3px rgba(59,130,246,.12);
 }
