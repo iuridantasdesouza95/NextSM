@@ -1,18 +1,17 @@
 :root {
-  --nextsm-navy: #081B33;
-  --nextsm-navy-2: #0D2747;
-  --nextsm-blue: #2563EB;
-  --nextsm-blue-electric: #3B82F6;
-  --nextsm-blue-light: #60A5FA;
+  --nextsm-blue: #0066FF;
+  --nextsm-cyan: #00D4FF;
+  --nextsm-navy: #0A1025;
+  --nextsm-navy-2: #182338;
   --nextsm-white: #FFFFFF;
   --nextsm-bg: #F8FAFC;
-  --nextsm-text: #0F172A;
+  --nextsm-text: #0A1025;
   --nextsm-text-secondary: #64748B;
-  --nextsm-border: #E2E8F0;
+  --nextsm-border: #D8E0EA;
   --nextsm-success: #16A34A;
   --nextsm-warning: #D97706;
   --nextsm-danger: #DC2626;
-  --nextsm-info: #2563EB;
+  --nextsm-info: #0066FF;
   --nextsm-radius-sm: 8px;
   --nextsm-radius-md: 12px;
   --nextsm-radius-lg: 16px;
