@@ -30,6 +30,7 @@
   html { font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
   body { background-color:var(--color-background); color:var(--color-foreground); font-family:inherit; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
   ::selection { background:color-mix(in srgb,#2563EB 22%,transparent); }
+  h1,h2,h3,h4 { font-family:Manrope,Inter,ui-sans-serif,system-ui,sans-serif; letter-spacing:-0.02em; }
 }
 
 .nextsm-sidebar { background:#081B33; color:#F8FAFC; border-color:#183454 !important; box-shadow:none; }
@@ -62,3 +63,45 @@ button,a,input,textarea,select { transition:background-color 160ms ease,border-c
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline:2px solid #3B82F6; outline-offset:2px; }
 header,aside { box-shadow:0 1px 0 rgba(8,27,51,.08); }
 .dark .bg-muted\/20 { background-color:#081B33 !important; }.dark .bg-muted\/30 { background-color:#0D2747 !important; }
+
+/* NextSM SaaS component language */
+.nextsm-shell { min-height:100vh; }
+.nextsm-shell main > .p-6 { background:transparent; }
+.bg-card { background-color:var(--color-card); }
+.border { border-color:var(--color-border); }
+.rounded-xl,.rounded-2xl { border-color:var(--color-border); }
+.nextsm-shell .bg-card.border,
+.nextsm-shell [class*="bg-card"][class*="border"],
+.nextsm-shell .border.bg-background { box-shadow:0 1px 2px rgba(8,27,51,.03); }
+.nextsm-shell input,
+.nextsm-shell textarea,
+.nextsm-shell select { border-color:var(--color-input); background-color:var(--color-card); }
+.nextsm-shell input:focus,
+.nextsm-shell textarea:focus,
+.nextsm-shell select:focus { border-color:#3B82F6; box-shadow:0 0 0 3px rgba(59,130,246,.12); outline:none; }
+.nextsm-shell button:not(.nextsm-nav-item),
+.nextsm-auth button { border-radius:8px; }
+.nextsm-shell [data-slot="card"] { border-radius:12px; }
+.nextsm-shell [data-slot="card-header"] { padding-bottom:16px; }
+.nextsm-shell [data-slot="card-title"] { font-family:Manrope,Inter,sans-serif; font-weight:700; color:var(--color-foreground); }
+.nextsm-shell [data-slot="card-description"] { color:var(--color-muted-foreground); }
+.nextsm-shell [data-slot="badge"] { font-weight:600; letter-spacing:.01em; }
+.nextsm-shell [role="tablist"] { border-radius:10px; }
+.nextsm-shell table { font-size:13px; }
+.nextsm-shell thead th { color:#64748B; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+.nextsm-shell tbody tr { border-color:var(--color-border); }
+.nextsm-shell tbody tr:hover { background-color:rgba(37,99,235,.035); }
+.nextsm-shell [role="dialog"] { border-color:var(--color-border); border-radius:16px; box-shadow:0 20px 50px rgba(8,27,51,.16); }
+.nextsm-shell [data-radix-popper-content-wrapper] [role="menu"],
+.nextsm-shell [role="listbox"] { border-color:var(--color-border); border-radius:10px; box-shadow:0 12px 30px rgba(8,27,51,.12); }
+.nextsm-empty { display:flex; min-height:180px; align-items:center; justify-content:center; border:1px dashed #CBD5E1; border-radius:12px; color:#64748B; }
+.nextsm-section-title { font-family:Manrope,Inter,sans-serif; font-weight:700; letter-spacing:-.02em; }
+.nextsm-accent { color:#2563EB; }
+.nextsm-surface-accent { background:#EEF4FF; color:#0D2747; }
+.nextsm-focus-ring:focus-visible { outline:2px solid #3B82F6; outline-offset:3px; }
+
+@media (max-width: 767px) {
+  .nextsm-shell main > .p-6 { padding:16px; }
+  .nextsm-topbar { padding-left:16px; padding-right:16px; }
+  .nextsm-auth__feature { padding:8px 10px; }
+}
