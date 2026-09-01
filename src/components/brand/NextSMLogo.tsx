@@ -5,19 +5,21 @@ type NextSMLogoProps = HTMLAttributes<HTMLDivElement> & {
   inverse?: boolean;
 };
 
-export function NextSMLogo({ compact = false, inverse = false, className = "", ...props }: NextSMLogoProps) {
+export function NextSMLogo({ compact = false, inverse = false, className = "", style, ...props }: NextSMLogoProps) {
   const textColor = inverse ? "#FFFFFF" : "#0A1025";
   return (
     <div
       className={`nextsm-logo ${inverse ? "nextsm-logo--inverse" : ""} ${className}`}
-      style={{ fontFamily: "Sora, Inter, ui-sans-serif, system-ui, sans-serif" }}
+      style={{ fontFamily: "Sora, Inter, ui-sans-serif, system-ui, sans-serif", ...style }}
       {...props}
     >
       <svg
         className="nextsm-logo__art"
         viewBox={compact ? "0 0 96 96" : "0 0 420 96"}
+        width={compact ? 48 : 210}
+        height={compact ? 48 : 48}
         role="img"
-        aria-label="NextSM — Service Desk"
+        aria-label={compact ? "NextSM" : "NextSM — Service Desk"}
         preserveAspectRatio="xMinYMid meet"
       >
         <defs>
