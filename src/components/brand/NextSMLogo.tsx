@@ -6,9 +6,9 @@ type NextSMLogoProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 /**
- * NextSM official logo — Proposal 3 / Premium-Tecnológica.
- * Uses the approved brand assets so the mark, typography and spacing stay
- * identical to the approved identity guide.
+ * NextSM official logo.
+ * Uses the exact approved PNG brand assets uploaded to the repository,
+ * preserving the original mark, typography and spacing.
  */
 export function NextSMLogo({ compact = false, inverse = false, className = "", style, ...props }: NextSMLogoProps) {
   if (compact) {
@@ -19,7 +19,7 @@ export function NextSMLogo({ compact = false, inverse = false, className = "", s
         {...props}
       >
         <img
-          src="/brand/nextsm-symbol.svg"
+          src="/brand/logo Next_SM.png"
           alt="NextSM"
           loading="eager"
           decoding="async"
@@ -36,7 +36,7 @@ export function NextSMLogo({ compact = false, inverse = false, className = "", s
       {...props}
     >
       <img
-        src={inverse ? "/brand/nextsm-logo-dark.svg" : "/brand/nextsm-logo-light.svg"}
+        src="/brand/Logo_Nome_NextSM.png"
         alt="NextSM — Service Desk"
         loading="eager"
         decoding="async"
