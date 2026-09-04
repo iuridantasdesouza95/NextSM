@@ -36,7 +36,7 @@ export function NextSMLogo({ compact = false, inverse = false, className = "", s
       {...props}
     >
       <img
-        src={inverse ? "/brand/nextsm-logo-approved-dark.svg" : "/brand/nextsm-logo-light.svg"}
+        src={inverse ? "/brand/nextsm-logo-dark.svg" : "/brand/nextsm-logo-light.svg"}
         alt="NextSM — Service Desk"
         loading="eager"
         decoding="async"
