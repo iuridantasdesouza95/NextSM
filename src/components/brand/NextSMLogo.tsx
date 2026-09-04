@@ -7,11 +7,10 @@ type NextSMLogoProps = HTMLAttributes<HTMLDivElement> & {
 
 /**
  * NextSM official logo — Proposal 3 / Premium-Tecnológica.
- * Uses the stable SVG asset that renders natively in the browser.
+ * Uses the approved brand assets so the mark, typography and spacing stay
+ * identical to the approved identity guide.
  */
-export function NextSMLogo({ compact = false, className = "", style, ...props }: NextSMLogoProps) {
-  const logoSrc = "/brand/nextsm-logo-dark.svg";
-
+export function NextSMLogo({ compact = false, inverse = false, className = "", style, ...props }: NextSMLogoProps) {
   if (compact) {
     return (
       <div
@@ -20,19 +19,11 @@ export function NextSMLogo({ compact = false, className = "", style, ...props }:
         {...props}
       >
         <img
-          src={logoSrc}
+          src="/brand/nextsm-symbol.svg"
           alt="NextSM"
           loading="eager"
           decoding="async"
-          style={{
-            display: "block",
-            width: "209.45px",
-            height: "64px",
-            maxWidth: "none",
-            position: "absolute",
-            left: 0,
-            top: 0,
-          }}
+          style={{ display: "block", width: "64px", height: "64px", objectFit: "contain" }}
         />
       </div>
     );
@@ -45,7 +36,7 @@ export function NextSMLogo({ compact = false, className = "", style, ...props }:
       {...props}
     >
       <img
-        src={logoSrc}
+        src={inverse ? "/brand/nextsm-logo-approved-dark.svg" : "/brand/nextsm-logo-light.svg"}
         alt="NextSM — Service Desk"
         loading="eager"
         decoding="async"
