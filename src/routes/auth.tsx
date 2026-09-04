@@ -60,6 +60,8 @@ function AuthPage() {
     toast.success("Conta criada! Verifique seu e-mail se necessário.");
   }
 
+  const loginButtonClass = "h-11 w-full !bg-gradient-to-r !from-[#0066FF] !to-[#00D4FF] !text-white shadow-lg shadow-blue-600/20 hover:brightness-110";
+
   return (
     <div className="nextsm-auth min-h-screen overflow-hidden">
       <div className="nextsm-auth__orb nextsm-auth__orb--one" />
@@ -99,7 +101,7 @@ function AuthPage() {
                   <form className="space-y-5 pt-5" onSubmit={handleLogin}>
                     <div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="voce@empresa.com" className="h-11 bg-white" /></div>
                     <div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" type="password" required value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="••••••••" className="h-11 bg-white" /></div>
-                    <Button type="submit" className="h-11 w-full bg-gradient-to-r from-[#0066FF] to-[#00D4FF] text-white shadow-lg shadow-blue-600/20 hover:brightness-110" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar <ArrowRight className="ml-auto h-4 w-4" /></Button>
+                    <Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar <ArrowRight className="ml-auto h-4 w-4" /></Button>
                   </form>
                 </TabsContent>
                 <TabsContent value="register">
@@ -108,7 +110,7 @@ function AuthPage() {
                     <div className="space-y-2"><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" value={depto} onChange={e => setDepto(e.target.value)} placeholder="Ex.: Comercial" className="h-11 bg-white" /></div>
                     <div className="space-y-2"><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" type="email" required value={regEmail} onChange={e => setRegEmail(e.target.value)} className="h-11 bg-white" /></div>
                     <div className="space-y-2"><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" type="password" required minLength={6} value={regPass} onChange={e => setRegPass(e.target.value)} className="h-11 bg-white" /></div>
-                    <Button type="submit" className="h-11 w-full bg-gradient-to-r from-[#0066FF] to-[#00D4FF] text-white shadow-lg shadow-blue-600/20 hover:brightness-110" disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar conta <ArrowRight className="ml-auto h-4 w-4" /></Button>
+                    <Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar conta <ArrowRight className="ml-auto h-4 w-4" /></Button>
                   </form>
                 </TabsContent>
               </Tabs>
