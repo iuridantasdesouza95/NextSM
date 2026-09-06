@@ -8,11 +8,11 @@ import buscarBaseConhecimento from "./tools/buscar-base-conhecimento";
 const projectRef = import.meta.env['VITE_SUPABASE_PROJECT_ID'] ?? "project-ref-unset";
 
 export default defineMcp({
-  name: "vemplast-support-hub",
-  title: "Vemplast Support Hub",
+  name: "nextsm-service-management",
+  title: "NextSM Service Management",
   version: "0.1.0",
   instructions:
-    "Ferramentas do Mundo Vem / Vemplast Service Desk. Use `listar_chamados` e `obter_chamado` para consultar chamados do usuário autenticado, `criar_chamado` para abrir um novo chamado, `comentar_chamado` para responder e `buscar_base_conhecimento` para consultar artigos de apoio. Todas as operações respeitam as permissões do usuário logado.",
+    "Ferramentas do NextSM Service Management. Use `listar_chamados` e `obter_chamado` para consultar chamados do usuário autenticado, `criar_chamado` para abrir um novo chamado, `comentar_chamado` para responder e `buscar_base_conhecimento` para consultar artigos de apoio. Todas as operações respeitam as permissões do usuário logado.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
