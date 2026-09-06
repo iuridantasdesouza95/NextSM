@@ -1,6 +1,6 @@
-# Mundo Vem — Service Desk
+# NextSM — Service Management
 
-> Portal interno de chamados da Mundo Vem (Vemplast) para TI e demais áreas, com SLA, base de conhecimento e assistente inteligente.
+> Plataforma de Service Management para atendimento de chamados, SLA, base de conhecimento e assistente inteligente.
 
 O acesso ao portal exige login corporativo. As páginas públicas abaixo descrevem o serviço.
 
