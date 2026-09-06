@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Ticket, PlusCircle, BookOpen, LogOut, Users, FolderTree, ShieldCheck, MessageSquare, BarChart3, Settings2, Building2, ArrowLeftRight, FileText, ListChecks, Moon, Sun, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Ticket, PlusCircle, BookOpen, LogOut, Users, FolderTree, ShieldCheck, MessageSquare, BarChart3, Settings2, Building2, ArrowLeftRight, FileText, ListChecks, Moon, Sun, ChevronRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -46,6 +46,7 @@ function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [darkMode, setDarkMode] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const { data: roles = [] } = useQuery({
     queryKey: ["my-roles", user.id],
@@ -97,6 +98,17 @@ function AppShell() {
     setDarkMode(dark);
     document.documentElement.classList.toggle("dark", dark);
   }, []);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [mobileMenuOpen]);
 
   const toggleTheme = () => {
     const next = !darkMode;
@@ -174,13 +186,16 @@ function AppShell() {
     ] }] : []),
   ];
 
-  return <div className="nextsm-shell flex min-h-screen bg-muted/20">
-    <aside className="nextsm-sidebar hidden w-[272px] flex-col border-r md:flex">
-      <div className="nextsm-sidebar__brand"><NextSMLogo inverse /><div className="nextsm-sidebar__status"><span />Service Management</div></div>
-      <div className="nextsm-sidebar__area"><div className="nextsm-sidebar__area-label">Área atual</div><div className="flex items-center gap-3"><div className="nextsm-sidebar__area-icon"><Building2 className="h-4 w-4" /></div><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">{area?.nome ?? "Não selecionada"}</div><div className="truncate text-xs text-slate-400">Ambiente operacional</div></div></div><Button variant="ghost" size="sm" className="mt-3 w-full justify-between text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => navigate({ to: "/areas" })}>Trocar área<ArrowLeftRight className="h-4 w-4" /></Button></div>
-      <nav className="nextsm-sidebar__nav flex-1 overflow-y-auto">{sections.map(section => <div key={section.title} className="mb-5"><p className="nextsm-sidebar__section">{section.title}</p><div className="space-y-1">{section.items.map(({ to, icon: Icon, label }) => { const active = to === "/chamados" ? pathname === "/chamados" : to === "/chamados/novo" ? pathname === "/chamados/novo" : pathname === to || (to !== "/dashboard" && to !== "/admin" && pathname.startsWith(to)) || (to === "/admin" && pathname === "/admin"); return <Link key={to} to={to} className={`nextsm-nav-item ${active ? "is-active" : ""}`}><Icon className="h-[17px] w-[17px]" /><span>{label}</span>{active && <ChevronRight className="ml-auto h-4 w-4 opacity-70" />}</Link>; })}</div></div>)}</nav>
-      <div className="nextsm-sidebar__footer"><div className="mb-3 flex items-center gap-3 px-2"><div className="nextsm-avatar">{displayName.charAt(0).toUpperCase()}</div><div className="min-w-0"><div className="truncate text-sm font-semibold text-white">{displayName}</div><div className="text-[11px] text-slate-400">{isAdmin ? "Administrador" : "Usuário"}</div></div></div><div className="grid grid-cols-2 gap-2"><Button variant="ghost" size="sm" className="text-slate-300 hover:bg-white/10 hover:text-white" onClick={toggleTheme}>{darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}{darkMode ? "Claro" : "Escuro"}</Button><Button disabled={signingOut} variant="ghost" size="sm" className="text-slate-300 hover:bg-red-500/10 hover:text-red-300" onClick={handleSignOut}><LogOut className="mr-2 h-4 w-4" />{signingOut ? "Saindo..." : "Sair"}</Button></div></div>
-    </aside>
-    <main className="flex-1 overflow-x-hidden"><header className="nextsm-topbar flex h-16 items-center justify-between px-6"><div className="flex items-center gap-3"><div className="md:hidden"><NextSMLogo compact /></div><span className="hidden text-sm font-medium text-slate-500 md:block">Workspace / {area?.nome ?? "Área"}</span></div><div className="flex items-center gap-2">{!signingOut && <NotificationBell userId={user.id} />}<Button variant="ghost" size="sm" onClick={toggleTheme} aria-label={darkMode ? "Ativar tema claro" : "Ativar tema escuro"}>{darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button><Button disabled={signingOut} variant="ghost" size="sm" className="md:hidden text-destructive" onClick={handleSignOut} aria-label="Sair do portal"><LogOut className="h-4 w-4" /></Button></div></header><div className="p-6"><Outlet /></div></main>
+  const sidebar = <aside className="nextsm-sidebar flex w-[272px] shrink-0 flex-col border-r">
+    <div className="nextsm-sidebar__brand"><NextSMLogo inverse /><div className="nextsm-sidebar__status"><span />Service Management</div></div>
+    <div className="nextsm-sidebar__area"><div className="nextsm-sidebar__area-label">Área atual</div><div className="flex items-center gap-3"><div className="nextsm-sidebar__area-icon"><Building2 className="h-4 w-4" /></div><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-white">{area?.nome ?? "Não selecionada"}</div><div className="truncate text-xs text-slate-400">Ambiente operacional</div></div></div><Button variant="ghost" size="sm" className="mt-3 w-full justify-between text-slate-300 hover:bg-white/10 hover:text-white" onClick={() => navigate({ to: "/areas" })}>Trocar área<ArrowLeftRight className="h-4 w-4" /></Button></div>
+    <nav className="nextsm-sidebar__nav flex-1 overflow-y-auto">{sections.map(section => <div key={section.title} className="mb-5"><p className="nextsm-sidebar__section">{section.title}</p><div className="space-y-1">{section.items.map(({ to, icon: Icon, label }) => { const active = to === "/chamados" ? pathname === "/chamados" : to === "/chamados/novo" ? pathname === "/chamados/novo" : pathname === to || (to !== "/dashboard" && to !== "/admin" && pathname.startsWith(to)) || (to === "/admin" && pathname === "/admin"); return <Link key={to} to={to} className={`nextsm-nav-item ${active ? "is-active" : ""}`}><Icon className="h-[17px] w-[17px]" /><span>{label}</span>{active && <ChevronRight className="ml-auto h-4 w-4 opacity-70" />}</Link>; })}</div></div>)}</nav>
+    <div className="nextsm-sidebar__footer"><div className="mb-3 flex items-center gap-3 px-2"><div className="nextsm-avatar">{displayName.charAt(0).toUpperCase()}</div><div className="min-w-0"><div className="truncate text-sm font-semibold text-white">{displayName}</div><div className="text-[11px] text-slate-400">{isAdmin ? "Administrador" : "Usuário"}</div></div></div><div className="grid grid-cols-2 gap-2"><Button variant="ghost" size="sm" className="text-slate-300 hover:bg-white/10 hover:text-white" onClick={toggleTheme}>{darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}{darkMode ? "Claro" : "Escuro"}</Button><Button disabled={signingOut} variant="ghost" size="sm" className="text-slate-300 hover:bg-red-500/10 hover:text-red-300" onClick={handleSignOut}><LogOut className="mr-2 h-4 w-4" />{signingOut ? "Saindo..." : "Sair"}</Button></div></div>
+  </aside>;
+
+  return <div className="nextsm-shell flex min-h-screen min-w-0 bg-muted/20">
+    <div className="hidden md:flex">{sidebar}</div>
+    {mobileMenuOpen && <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Menu de navegação"><button className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} /> <div className="relative z-10 h-full w-[min(86vw,320px)] shadow-2xl">{sidebar}</div></div>}
+    <main className="min-w-0 flex-1 overflow-x-hidden"><header className="nextsm-topbar flex h-16 items-center justify-between px-3 sm:px-6"><div className="flex min-w-0 items-center gap-3"><Button variant="ghost" size="icon" className="md:hidden shrink-0" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir menu"><Menu className="h-5 w-5" /></Button><div className="md:hidden shrink-0"><NextSMLogo compact /></div><span className="hidden truncate text-sm font-medium text-slate-500 sm:block">Workspace / {area?.nome ?? "Área"}</span></div><div className="flex shrink-0 items-center gap-1 sm:gap-2">{!signingOut && <NotificationBell userId={user.id} />}<Button variant="ghost" size="sm" onClick={toggleTheme} aria-label={darkMode ? "Ativar tema claro" : "Ativar tema escuro"}>{darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}</Button><Button disabled={signingOut} variant="ghost" size="icon" className="md:hidden text-destructive" onClick={handleSignOut} aria-label="Sair do portal"><LogOut className="h-4 w-4" /></Button></div></header><div className="min-w-0 p-3 sm:p-6"><Outlet /></div></main>
   </div>;
 }
