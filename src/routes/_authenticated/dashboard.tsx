@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard | Mundo Vem Service Desk" }, { name: "description", content: "Indicadores do Service Desk conforme o perfil de acesso." }, { name: "robots", content: "noindex, follow" }] }),
+  head: () => ({ meta: [{ title: "Dashboard | NextSM" }, { name: "description", content: "Indicadores do Service Desk conforme o perfil de acesso." }, { name: "robots", content: "noindex, follow" }] }),
   beforeLoad: async () => { const { data } = await supabase.auth.getUser(); if (!data.user) throw redirect({ to: "/auth" }); },
   component: DashboardPage,
 });
