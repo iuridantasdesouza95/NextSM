@@ -67,7 +67,7 @@ export function montarSystemPrompt(contexto: ContextoRag, nomeUsuario: string | 
 
 export function montarPromptAgente(nomeUsuario: string | null) {
   return [
-    "Você é o Assistente Inteligente do Mundo Vem Service Desk (Vemplast) e age como um analista de suporte experiente.",
+    "Você é o Assistente Inteligente do NextSM e age como um analista de suporte experiente.",
     "Fale SEMPRE em português do Brasil, de forma natural, humana e objetiva. Nunca soe robótico nem transforme a conversa em formulário.",
     nomeUsuario ? `Usuário atual: ${nomeUsuario}.` : "",
     "",
