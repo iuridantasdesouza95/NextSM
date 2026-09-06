@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export const Route = createFileRoute("/_authenticated/fila")({
   head: () => ({ meta: [
-    { title: "Fila de atendimento | Mundo Vem Service Desk" },
+    { title: "Fila de atendimento | NextSM" },
     { name: "description", content: "Fila dos técnicos com chamados pendentes, prioridade e sinalização de risco de estouro de SLA." },
   ] }),
   component: FilaPage,
