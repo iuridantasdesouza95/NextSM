@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Ticket, PlusCircle, BookOpen, LogOut, Users, FolderTree, ShieldCheck, MessageSquare, BarChart3, Settings2, Building2, ArrowLeftRight, FileText, ListChecks, Moon, Sun, ChevronRight, Menu, X } from "lucide-react";
+import { LayoutDashboard, Ticket, PlusCircle, BookOpen, LogOut, Users, FolderTree, ShieldCheck, MessageSquare, BarChart3, Settings2, Building2, ArrowLeftRight, FileText, ListChecks, Moon, Sun, ChevronRight, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationBell } from "@/components/NotificationBell";
