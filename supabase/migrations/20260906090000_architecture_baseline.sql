@@ -1,0 +1,34 @@
+-- NextSM Architecture Baseline
+-- Date: 2026-09-06
+-- Project: byuvcguynctqftnoylno
+--
+-- IMPORTANT:
+-- This migration is intentionally NO-OP. It does not create, alter, drop,
+-- insert, update or delete any database object or data.
+--
+-- Purpose:
+-- Record in the migration history the point at which the current schema was
+-- audited and the architecture baseline was documented in GitHub.
+--
+-- The existing migration files remain immutable historical records.
+-- Future schema reconstruction must be performed through new, reviewed
+-- migrations after the target architecture is approved.
+--
+-- Current responsibility boundary:
+--   NextSM = Service Desk + ITSM operational domain
+--   Next ID = global identity/authentication (future)
+--   Next AI = conversational AI (future)
+--   n8n = external orchestration/automation (future)
+--
+-- Current audit findings intentionally preserved for future review:
+--   * incremental/corrective migration history
+--   * logical relationships that need future FK evaluation
+--   * RLS policy rationalization required
+--   * SECURITY DEFINER privilege review required
+--   * candidate duplicate/unused indexes
+--   * SLA model overlap (`slas` / `sla_regras`)
+--   * knowledge model overlap
+--   * broad `chamados` responsibility surface
+--   * AI/RAG ownership boundary to be defined
+--
+-- DO NOT add schema changes to this file.
