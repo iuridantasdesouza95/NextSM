@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, Clock3, CheckCircle2, MessageCircle, Ticket, ChevronUp, Search, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/chamados/")({
-  head: () => ({ meta: [{ title: "Meus chamados | Mundo Vem Service Desk" }, { name: "description", content: "Consulte e acompanhe seus chamados de TI e demais áreas." }, { name: "robots", content: "noindex, follow" }] }),
+  head: () => ({ meta: [{ title: "Meus chamados | NextSM" }, { name: "description", content: "Consulte e acompanhe seus chamados de TI e demais áreas." }, { name: "robots", content: "noindex, follow" }] }),
   component: ChamadosPage,
 });
 const statusLabel: Record<string, string> = { aberto: "Aberto", em_andamento: "Em andamento", aguardando_usuario: "Aguardando você", aguardando_terceiro: "Aguardando terceiro", resolvido: "Resolvido", fechado: "Fechado", cancelado: "Cancelado" };
