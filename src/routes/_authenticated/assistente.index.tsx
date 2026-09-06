@@ -10,16 +10,16 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/assistente/")({
   head: () => ({
     meta: [
-      { title: "Assistente Inteligente | Mundo Vem Service Desk" },
+      { title: "Assistente Inteligente | NextSM" },
       {
         name: "description",
         content:
-          "Converse com o Assistente Inteligente do Mundo Vem para tirar dúvidas sobre processos, ERP Senior e chamados.",
+          "Converse com o Assistente Inteligente do NextSM para tirar dúvidas sobre processos, sistemas e chamados.",
       },
-      { property: "og:title", content: "Assistente Inteligente | Mundo Vem Service Desk" },
+      { property: "og:title", content: "Assistente Inteligente | NextSM" },
       {
         property: "og:description",
-        content: "Colaborador virtual do Service Desk da Vemplast com respostas baseadas na base interna.",
+        content: "Assistente virtual do NextSM com respostas baseadas na base interna.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -61,9 +61,9 @@ function EntradaAssistente() {
           <Bot className="h-8 w-8" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold">Assistente Inteligente Mundo Vem</h2>
+          <h2 className="text-lg font-semibold">Assistente Inteligente NextSM</h2>
           <p className="mt-1 max-w-md text-sm text-muted-foreground">
-            Tire dúvidas sobre processos internos, ERP Senior, seus chamados e a base de conhecimento.
+            Tire dúvidas sobre processos internos, sistemas, seus chamados e a base de conhecimento.
           </p>
         </div>
         <Button onClick={novaConversa} className="gap-2">
