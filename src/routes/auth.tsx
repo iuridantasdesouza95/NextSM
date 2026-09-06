@@ -63,12 +63,12 @@ function AuthPage() {
   const loginButtonClass = "h-11 w-full !bg-gradient-to-r !from-[#0066FF] !to-[#00D4FF] !text-white shadow-lg shadow-blue-600/20 hover:brightness-110";
 
   return (
-    <div className="nextsm-auth min-h-screen overflow-hidden">
+    <div className="nextsm-auth min-h-screen overflow-x-hidden overflow-y-auto">
       <div className="nextsm-auth__orb nextsm-auth__orb--one" />
       <div className="nextsm-auth__orb nextsm-auth__orb--two" />
       <div className="nextsm-auth__grid" />
       <div className="nextsm-network-bg" aria-hidden="true" />
-      <div className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-12 px-6 py-10 lg:grid-cols-[1fr_460px] lg:px-12">
+      <div className="relative mx-auto grid min-h-screen max-w-7xl items-start gap-8 px-4 py-6 sm:px-6 sm:py-10 lg:items-center lg:gap-12 lg:grid-cols-[1fr_460px] lg:px-12">
         <section className="hidden lg:block">
           <NextSMLogo inverse className="mb-10" />
           <div className="max-w-xl">
@@ -84,14 +84,14 @@ function AuthPage() {
         </section>
 
         <div className="w-full max-w-md justify-self-center lg:max-w-[460px]">
-          <div className="mb-7 flex justify-center lg:hidden"><NextSMLogo inverse /></div>
+          <div className="mb-6 flex justify-center lg:hidden"><NextSMLogo inverse /></div>
           <Card className="nextsm-auth__card border-white/10 bg-white/[0.97] shadow-2xl shadow-black/20">
-            <CardHeader className="space-y-3 px-7 pt-7">
+            <CardHeader className="space-y-3 px-5 pt-6 sm:px-7 sm:pt-7">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0066FF]"><span className="h-1.5 w-1.5 rounded-full bg-[#00D4FF]" /> Acesso seguro</div>
               <CardTitle className="text-2xl tracking-tight text-[#0A1025]">Bem-vindo à NextSM</CardTitle>
               <CardDescription className="text-slate-500">Entre com seu e-mail corporativo para acessar o portal.</CardDescription>
             </CardHeader>
-            <CardContent className="px-7 pb-7">
+            <CardContent className="px-5 pb-6 sm:px-7 sm:pb-7">
               <Tabs defaultValue="login">
                 <TabsList className="grid h-11 w-full grid-cols-2 bg-slate-100 p-1">
                   <TabsTrigger value="login">Entrar</TabsTrigger>
@@ -116,7 +116,7 @@ function AuthPage() {
               </Tabs>
             </CardContent>
           </Card>
-          <p className="mt-5 text-center text-xs text-slate-400">NextSM • Service Desk</p>
+          <p className="mt-5 pb-2 text-center text-xs text-slate-400">NextSM • Service Desk</p>
         </div>
       </div>
     </div>
