@@ -17,16 +17,16 @@ import {
 export const Route = createFileRoute("/_authenticated/assistente/$conversaId")({
   head: () => ({
     meta: [
-      { title: "Assistente Inteligente | Mundo Vem Service Desk" },
+      { title: "Assistente Inteligente | NextSM" },
       {
         name: "description",
         content:
-          "Converse com o Assistente Inteligente do Mundo Vem: respostas baseadas na base de conhecimento, chamados e documentos internos.",
+          "Converse com o Assistente Inteligente do NextSM: respostas baseadas na base de conhecimento, chamados e documentos internos.",
       },
-      { property: "og:title", content: "Assistente Inteligente | Mundo Vem Service Desk" },
+      { property: "og:title", content: "Assistente Inteligente | NextSM" },
       {
         property: "og:description",
-        content: "Colaborador virtual do Service Desk da Vemplast com fontes citadas e histórico de conversas.",
+        content: "Assistente virtual do NextSM com fontes citadas e histórico de conversas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
