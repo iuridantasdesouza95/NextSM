@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/_authenticated/admin/assistente")({
   head: () => ({
     meta: [
-      { title: "Conversas do Assistente | Admin | Mundo Vem Service Desk" },
+      { title: "Conversas do Assistente | Admin | NextSM" },
       {
         name: "description",
         content:
           "Auditoria administrativa das conversas do Assistente Inteligente de todos os colaboradores.",
       },
       { name: "robots", content: "noindex, follow" },
-      { property: "og:title", content: "Conversas do Assistente | Admin | Mundo Vem Service Desk" },
+      { property: "og:title", content: "Conversas do Assistente | Admin | NextSM" },
       {
         property: "og:description",
         content: "Histórico de conversas do Assistente Inteligente identificado por usuário.",
