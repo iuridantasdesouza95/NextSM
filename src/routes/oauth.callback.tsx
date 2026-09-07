@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
+const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
 
 type TokenBridgeResponse = {
   ok?: boolean;
