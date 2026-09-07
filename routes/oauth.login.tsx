@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 const NEXT_ID_AUTHORIZE = "https://next-id-universe.vercel.app/oauth/authorize";
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
+const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 
@@ -44,8 +44,6 @@ function OAuthLogin() {
       const challenge = await sha256Base64url(verifier);
       if (cancelled) return;
 
-      // Keep each OAuth transaction under its own state key. This prevents
-      // another login tab from overwriting the transaction in progress.
       const transaction: OAuthTransaction = {
         verifier,
         nonce,
