@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/admin.server";
 
-const NEXT_ID_TOKEN_ENDPOINT = "https://next-id-universe.vercel.app/api/oauth/token";
+// Next ID exposes the OAuth token endpoint at /oauth/token (not /api/oauth/token).
+const NEXT_ID_TOKEN_ENDPOINT = "https://next-id-universe.vercel.app/oauth/token";
 const NEXT_ID_USERINFO_ENDPOINT = "https://next-id-universe.vercel.app/userinfo";
 const ALLOWED_CLIENT_ID = "nextsm-web";
 const ALLOWED_REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/api/oauth/token")({
             }),
             cache: "no-store",
           });
+
           const payload = await upstream.json();
           if (!upstream.ok || !payload.access_token) {
             return Response.json({ ok: false, error: payload?.error || "token_exchange_failed" }, { status: upstream.status || 502 });
@@ -93,8 +95,10 @@ export const Route = createFileRoute("/api/oauth/token")({
 
           const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
           const cookieBase = "Path=/; HttpOnly; Secure; SameSite=Lax";
-          if (payload.access_token) headers.append("Set-Cookie", `nextsm_access_token=${encodeURIComponent(payload.access_token)}; Max-Age=3600; ${cookieBase}`);
-          if (payload.refresh_token) headers.append("Set-Cookie", `nextsm_refresh_token=${encodeURIComponent(payload.refresh_token)}; Max-Age=2592000; ${cookieBase}`);
+          headers.append("Set-Cookie", `nextsm_access_token=${encodeURIComponent(payload.access_token)}; Max-Age=3600; ${cookieBase}`);
+          if (payload.refresh_token) {
+            headers.append("Set-Cookie", `nextsm_refresh_token=${encodeURIComponent(payload.refresh_token)}; Max-Age=2592000; ${cookieBase}`);
+          }
 
           return new Response(JSON.stringify({
             ok: true,
