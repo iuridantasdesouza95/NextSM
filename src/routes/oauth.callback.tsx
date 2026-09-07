@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 const CLIENT_ID = "nextsm-web";
 const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
+type TokenBridgeResponse = {
+  ok?: boolean;
+  error?: string;
+  redirect_to?: string;
+};
+
 export const Route = createFileRoute("/oauth/callback")({
   ssr: false,
   component: OAuthCallback,
@@ -38,15 +44,15 @@ function OAuthCallback() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, code, code_verifier: verifier }),
       });
-      const payload = (await response.json()) as { ok?: boolean; error?: string };
-      if (!response.ok || !payload.ok) {
-        setError(payload.error || "Não foi possível trocar o authorization code por tokens.");
+      const payload = (await response.json()) as TokenBridgeResponse;
+      if (!response.ok || !payload.ok || !payload.redirect_to) {
+        setError(payload.error || "Não foi possível concluir a autenticação no NextSM.");
         return;
       }
 
       sessionStorage.removeItem("nextsm_oauth_state");
       sessionStorage.removeItem("nextsm_oauth_verifier");
-      window.location.replace("/oauth/success");
+      window.location.replace(payload.redirect_to);
     })().catch((cause) => setError(cause instanceof Error ? cause.message : "Falha inesperada no callback OAuth."));
   }, []);
 
