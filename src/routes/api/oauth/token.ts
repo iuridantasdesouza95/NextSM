@@ -31,7 +31,13 @@ export const Route = createFileRoute("/api/oauth/token")({
             upstream = await fetch(NEXT_ID_TOKEN_ENDPOINT, {
               method: "POST",
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, redirect_uri: redirectUri, code, code_verifier: codeVerifier }),
+              body: new URLSearchParams({
+                grant_type: "authorization_code",
+                client_id: clientId,
+                redirect_uri: redirectUri,
+                code,
+                code_verifier: codeVerifier,
+              }),
               cache: "no-store",
             });
           } catch (error) {
@@ -97,7 +103,7 @@ export const Route = createFileRoute("/api/oauth/token")({
           if (profile.next_id_subject !== subject) {
             const { error: mappingError } = await supabaseAdmin
               .from("profiles")
-              .update({ next_id_subject: subject })
+              .update({ next_id_subject: subject } as never)
               .eq("id", profile.id);
 
             if (mappingError) {
