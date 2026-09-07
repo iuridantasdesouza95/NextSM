@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
+const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 const OAUTH_PROCESSING_PREFIX = "nextsm_oauth_processing:";
 const OAUTH_TRANSACTION_MAX_AGE_MS = 10 * 60 * 1000;
@@ -97,8 +97,6 @@ function OAuthCallback() {
         return;
       }
 
-      // The authorization code is one-time. Mark this exact state as being
-      // processed so a duplicate callback cannot exchange it twice.
       if (localStorage.getItem(stateKey) === "1") return;
       localStorage.setItem(stateKey, "1");
 
