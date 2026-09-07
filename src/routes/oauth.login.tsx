@@ -3,11 +3,15 @@ import { useEffect } from "react";
 
 const NEXT_ID_AUTHORIZE = "https://next-id-universe.vercel.app/oauth/authorize";
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
+const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
-const OAUTH_STATE_KEY = "nextsm_oauth_state";
-const OAUTH_VERIFIER_KEY = "nextsm_oauth_verifier";
-const OAUTH_NONCE_KEY = "nextsm_oauth_nonce";
+const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
+
+type OAuthTransaction = {
+  verifier: string;
+  nonce: string;
+  createdAt: number;
+};
 
 function base64url(bytes: Uint8Array) {
   let binary = "";
@@ -40,11 +44,8 @@ function OAuthLogin() {
       const challenge = await sha256Base64url(verifier);
       if (cancelled) return;
 
-      // OAuth state belongs to this browser tab. sessionStorage avoids a second
-      // login in another tab overwriting the transaction that is in progress.
-      sessionStorage.setItem(OAUTH_STATE_KEY, state);
-      sessionStorage.setItem(OAUTH_VERIFIER_KEY, verifier);
-      sessionStorage.setItem(OAUTH_NONCE_KEY, nonce);
+      const transaction: OAuthTransaction = { verifier, nonce, createdAt: Date.now() };
+      localStorage.setItem(`${OAUTH_TXN_PREFIX}${state}`, JSON.stringify(transaction));
 
       const url = new URL(NEXT_ID_AUTHORIZE);
       url.searchParams.set("client_id", CLIENT_ID);
@@ -58,9 +59,7 @@ function OAuthLogin() {
       window.location.replace(url.toString());
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return (
