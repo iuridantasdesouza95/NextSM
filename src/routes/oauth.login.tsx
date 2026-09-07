@@ -35,9 +35,6 @@ function OAuthLogin() {
       const challenge = await sha256Base64url(verifier);
       if (cancelled) return;
 
-      // localStorage is used intentionally here because the OAuth round-trip
-      // can cross origins and return to a fresh browser document. The values
-      // are short-lived and are removed immediately after the callback.
       localStorage.setItem("nextsm_oauth_verifier", verifier);
       localStorage.setItem("nextsm_oauth_state", state);
 
@@ -52,10 +49,7 @@ function OAuthLogin() {
       url.searchParams.set("code_challenge_method", "S256");
       window.location.replace(url.toString());
     })();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return <main className="grid min-h-screen place-items-center bg-[#0A1025] px-6 text-white"><div className="text-center"><div className="text-lg font-semibold">Conectando ao Next ID…</div><p className="mt-2 text-sm text-slate-400">Você será redirecionado para o login central.</p></div></main>;
