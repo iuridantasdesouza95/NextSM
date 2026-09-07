@@ -28,8 +28,8 @@ function OAuthCallback() {
       const returnedState = getParam("state");
       const oauthError = getParam("error");
       const errorDescription = getParam("error_description");
-      const expectedState = sessionStorage.getItem("nextsm_oauth_state");
-      const verifier = sessionStorage.getItem("nextsm_oauth_verifier");
+      const expectedState = localStorage.getItem("nextsm_oauth_state");
+      const verifier = localStorage.getItem("nextsm_oauth_verifier");
 
       if (oauthError) {
         setError(`Autorização recusada: ${errorDescription || oauthError}`);
@@ -70,8 +70,8 @@ function OAuthCallback() {
         return;
       }
 
-      sessionStorage.removeItem("nextsm_oauth_state");
-      sessionStorage.removeItem("nextsm_oauth_verifier");
+      localStorage.removeItem("nextsm_oauth_state");
+      localStorage.removeItem("nextsm_oauth_verifier");
       window.location.replace(payload.redirect_to);
     })().catch((cause) => setError(cause instanceof Error ? cause.message : "Falha inesperada no callback OAuth."));
   }, []);
