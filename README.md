@@ -46,3 +46,5 @@ Configure as credenciais do seu projeto Supabase no ambiente de desenvolvimento/
 A identidade visual da NextSM segue a direção **Premium/Tecnológica**, baseada em estrutura, conexão, inteligência e evolução contínua.
 
 A marca utiliza um símbolo hexagonal com N geométrico e linguagem visual baseada em navy profundo, azul tecnológico e branco.
+
+<!-- redeploy: 2026-09-07 -->
