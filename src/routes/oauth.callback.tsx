@@ -5,6 +5,8 @@ const CLIENT_ID = "nextsm-web";
 const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
 const OAUTH_STATE_KEY = "nextsm_oauth_state";
 const OAUTH_VERIFIER_KEY = "nextsm_oauth_verifier";
+const OAUTH_NONCE_KEY = "nextsm_oauth_nonce";
+const OAUTH_PROCESSING_KEY = "nextsm_oauth_processing";
 
 type TokenBridgeResponse = {
   ok?: boolean;
@@ -32,11 +34,16 @@ function OAuthCallback() {
       const returnedState = getParam("state");
       const oauthError = getParam("error");
       const errorDescription = getParam("error_description");
-      const expectedState = localStorage.getItem(OAUTH_STATE_KEY);
-      const verifier = localStorage.getItem(OAUTH_VERIFIER_KEY);
+      const expectedState = sessionStorage.getItem(OAUTH_STATE_KEY);
+      const verifier = sessionStorage.getItem(OAUTH_VERIFIER_KEY);
+      const nonce = sessionStorage.getItem(OAUTH_NONCE_KEY);
       const stateMatches = Boolean(returnedState && expectedState && returnedState === expectedState);
 
       if (oauthError) {
+        sessionStorage.removeItem(OAUTH_STATE_KEY);
+        sessionStorage.removeItem(OAUTH_VERIFIER_KEY);
+        sessionStorage.removeItem(OAUTH_NONCE_KEY);
+        sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
         setError(`Autorização recusada: ${errorDescription || oauthError}`);
         return;
       }
@@ -47,18 +54,18 @@ function OAuthCallback() {
           : !returnedState
             ? "state não recebido pelo callback"
             : !expectedState
-              ? "state original não encontrado no navegador"
+              ? "state original não encontrado nesta aba"
               : "state recebido não corresponde ao state original";
 
         console.error("[NextSM OAuth] callback inválido", {
-          href: window.location.href,
           hasCode: Boolean(code),
-          returnedState,
-          expectedState,
+          hasReturnedState: Boolean(returnedState),
+          hasExpectedState: Boolean(expectedState),
           returnedStateLength: returnedState?.length ?? 0,
           expectedStateLength: expectedState?.length ?? 0,
           stateMatches,
           hasVerifier: Boolean(verifier),
+          hasNonce: Boolean(nonce),
         });
 
         setError(`Resposta OAuth inválida: ${reason}.`);
@@ -69,6 +76,13 @@ function OAuthCallback() {
         setError("PKCE verifier não encontrado. Inicie o login novamente.");
         return;
       }
+
+      // Prevent a second callback execution in the same tab from exchanging
+      // the one-time authorization code twice.
+      if (sessionStorage.getItem(OAUTH_PROCESSING_KEY) === returnedState) {
+        return;
+      }
+      sessionStorage.setItem(OAUTH_PROCESSING_KEY, returnedState);
 
       if (cancelled) return;
 
@@ -85,14 +99,18 @@ function OAuthCallback() {
 
       const payload = (await response.json()) as TokenBridgeResponse;
       if (!response.ok || !payload.ok || !payload.redirect_to) {
+        sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
         setError(payload.error || "Não foi possível concluir a autenticação no NextSM.");
         return;
       }
 
-      localStorage.removeItem(OAUTH_STATE_KEY);
-      localStorage.removeItem(OAUTH_VERIFIER_KEY);
+      sessionStorage.removeItem(OAUTH_STATE_KEY);
+      sessionStorage.removeItem(OAUTH_VERIFIER_KEY);
+      sessionStorage.removeItem(OAUTH_NONCE_KEY);
+      sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
       window.location.replace(payload.redirect_to);
     })().catch((cause) => {
+      sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
       setError(cause instanceof Error ? cause.message : "Falha inesperada no callback OAuth.");
     });
 
