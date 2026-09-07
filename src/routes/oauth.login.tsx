@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 const NEXT_ID_AUTHORIZE = "https://next-id-universe.vercel.app/oauth/authorize";
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
+const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
 
 function base64url(bytes: Uint8Array) {
   let binary = "";
