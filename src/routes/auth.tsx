@@ -13,7 +13,7 @@ import { NextSMLogo } from "@/components/brand/NextSMLogo";
 function safeNext(next: unknown): string | null { if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) return null; return next; }
 const TITULO = "Acesso ao portal — NextSM";
 const DESCRICAO = "Entre para abrir e acompanhar chamados de TI e das demais áreas atendidas pela NextSM.";
-const URL_PAGINA = "https://next-sm-iuri-dantas.vercel.app/auth";
+const URL_PAGINA = "https://next-servicemanagement.vercel.app/auth";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
