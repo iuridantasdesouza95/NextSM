@@ -20,20 +20,40 @@ function OAuthCallback() {
 
   useEffect(() => {
     void (async () => {
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get("code");
-      const returnedState = params.get("state");
+      const query = new URLSearchParams(window.location.search);
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const getParam = (name: string) => query.get(name) ?? hash.get(name);
+
+      const code = getParam("code");
+      const returnedState = getParam("state");
+      const oauthError = getParam("error");
+      const errorDescription = getParam("error_description");
       const expectedState = sessionStorage.getItem("nextsm_oauth_state");
       const verifier = sessionStorage.getItem("nextsm_oauth_verifier");
 
-      if (params.get("error")) {
-        setError(`Autorização recusada: ${params.get("error_description") || params.get("error")}`);
+      if (oauthError) {
+        setError(`Autorização recusada: ${errorDescription || oauthError}`);
         return;
       }
+
       if (!code || !returnedState || !expectedState || returnedState !== expectedState) {
-        setError("Resposta OAuth inválida: state ou authorization code ausente.");
+        const reason = !code
+          ? "authorization code não recebido"
+          : !returnedState
+            ? "state não recebido pelo callback"
+            : !expectedState
+              ? "state original não encontrado no navegador"
+              : "state recebido não corresponde ao state original";
+        console.error("[NextSM OAuth] callback inválido", {
+          href: window.location.href,
+          hasCode: Boolean(code),
+          returnedState,
+          hasExpectedState: Boolean(expectedState),
+        });
+        setError(`Resposta OAuth inválida: ${reason}.`);
         return;
       }
+
       if (!verifier) {
         setError("PKCE verifier não encontrado. Inicie o login novamente.");
         return;
