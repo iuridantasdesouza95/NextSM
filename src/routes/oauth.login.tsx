@@ -35,8 +35,11 @@ function OAuthLogin() {
       const challenge = await sha256Base64url(verifier);
       if (cancelled) return;
 
-      sessionStorage.setItem("nextsm_oauth_verifier", verifier);
-      sessionStorage.setItem("nextsm_oauth_state", state);
+      // localStorage is used intentionally here because the OAuth round-trip
+      // can cross origins and return to a fresh browser document. The values
+      // are short-lived and are removed immediately after the callback.
+      localStorage.setItem("nextsm_oauth_verifier", verifier);
+      localStorage.setItem("nextsm_oauth_state", state);
 
       const url = new URL(NEXT_ID_AUTHORIZE);
       url.searchParams.set("client_id", CLIENT_ID);
