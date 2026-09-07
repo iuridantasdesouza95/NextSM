@@ -2,12 +2,17 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Vite exposes VITE_* variables to the client. The NEXT_PUBLIC_* aliases
-// keep this project compatible with the environment variables already
-// configured in Vercel.
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Browser builds use Vite's VITE_* variables. The SSR runtime uses the
+// NEXT_PUBLIC_* variables already configured in Vercel.
+const isServer = import.meta.env.SSR;
+
+const SUPABASE_URL = isServer
+  ? process.env.NEXT_PUBLIC_SUPABASE_URL
+  : import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+
+const SUPABASE_PUBLISHABLE_KEY = isServer
+  ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  : import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   throw new Error('Missing Supabase environment variables');
