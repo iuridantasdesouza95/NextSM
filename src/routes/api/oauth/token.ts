@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/admin.server";
 const NEXT_ID_TOKEN_ENDPOINT = "https://next-id-universe.vercel.app/oauth/token";
 const NEXT_ID_USERINFO_ENDPOINT = "https://next-id-universe.vercel.app/userinfo";
 const ALLOWED_CLIENT_ID = "nextsm-web";
-const ALLOWED_REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
+const ALLOWED_REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
 function errorResponse(error: string, status: number, stage?: string) {
   console.error("[Next ID OAuth] bridge error", { error, stage });
