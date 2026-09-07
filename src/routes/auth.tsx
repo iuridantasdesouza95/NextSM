@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Loader2, ArrowRight, ShieldCheck, Zap, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { NextSMLogo } from "@/components/brand/NextSMLogo";
 
@@ -35,16 +35,13 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const nextPath = safeNext(next) && next !== "/dashboard" ? safeNext(next) : null;
   const [loading, setLoading] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPass, setLoginPass] = useState("");
-  const [nome, setNome] = useState("");
-  const [depto, setDepto] = useState("");
-  const [regEmail, setRegEmail] = useState("");
-  const [regPass, setRegPass] = useState("");
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPass });
+    const form = new FormData(e.currentTarget as HTMLFormElement);
+    const email = String(form.get("login-email") ?? "");
+    const password = String(form.get("login-pass") ?? "");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Bem-vindo à NextSM!");
@@ -54,10 +51,19 @@ function AuthPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault(); setLoading(true);
-    const { error } = await supabase.auth.signUp({ email: regEmail, password: regPass, options: { emailRedirectTo: window.location.origin + "/areas", data: { nome, departamento: depto } } });
+    const form = new FormData(e.currentTarget as HTMLFormElement);
+    const nome = String(form.get("reg-nome") ?? "");
+    const depto = String(form.get("reg-depto") ?? "");
+    const email = String(form.get("reg-email") ?? "");
+    const password = String(form.get("reg-pass") ?? "");
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + "/areas", data: { nome, departamento: depto } } });
     setLoading(false);
     if (error) return toast.error(error.message);
     toast.success("Conta criada! Verifique seu e-mail se necessário.");
+  }
+
+  function handleNextIdLogin() {
+    window.location.assign(`/oauth/login${nextPath ? `?next=${encodeURIComponent(nextPath)}` : ""}`);
   }
 
   const loginButtonClass = "h-11 w-full !bg-gradient-to-r !from-[#0066FF] !to-[#00D4FF] !text-white shadow-lg shadow-blue-600/20 hover:brightness-110";
@@ -89,27 +95,33 @@ function AuthPage() {
             <CardHeader className="space-y-3 px-5 pt-6 sm:px-7 sm:pt-7">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0066FF]"><span className="h-1.5 w-1.5 rounded-full bg-[#00D4FF]" /> Acesso seguro</div>
               <CardTitle className="text-2xl tracking-tight text-[#0A1025]">Bem-vindo à NextSM</CardTitle>
-              <CardDescription className="text-slate-500">Entre com seu e-mail corporativo para acessar o portal.</CardDescription>
+              <CardDescription className="text-slate-500">Escolha como deseja acessar o portal.</CardDescription>
             </CardHeader>
             <CardContent className="px-5 pb-6 sm:px-7 sm:pb-7">
+              <Button type="button" onClick={handleNextIdLogin} className={loginButtonClass} disabled={loading}>
+                <KeyRound className="mr-2 h-4 w-4" />
+                Entrar com Next ID
+                <ArrowRight className="ml-auto h-4 w-4" />
+              </Button>
+              <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><div className="h-px flex-1 bg-slate-200" /><span>ou entre com sua conta NextSM</span><div className="h-px flex-1 bg-slate-200" /></div>
               <Tabs defaultValue="login">
                 <TabsList className="grid h-11 w-full grid-cols-2 bg-slate-100 p-1">
-                  <TabsTrigger value="login">Entrar</TabsTrigger>
+                  <TabsTrigger value="login">E-mail e senha</TabsTrigger>
                   <TabsTrigger value="register">Criar conta</TabsTrigger>
                 </TabsList>
                 <TabsContent value="login">
                   <form className="space-y-5 pt-5" onSubmit={handleLogin}>
-                    <div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="voce@empresa.com" className="h-11 bg-white" /></div>
-                    <div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" type="password" required value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="••••••••" className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" name="login-email" type="email" required placeholder="voce@empresa.com" className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" name="login-pass" type="password" required placeholder="••••••••" className="h-11 bg-white" /></div>
                     <Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar <ArrowRight className="ml-auto h-4 w-4" /></Button>
                   </form>
                 </TabsContent>
                 <TabsContent value="register">
                   <form className="space-y-4 pt-5" onSubmit={handleSignup}>
-                    <div className="space-y-2"><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" required value={nome} onChange={e => setNome(e.target.value)} className="h-11 bg-white" /></div>
-                    <div className="space-y-2"><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" value={depto} onChange={e => setDepto(e.target.value)} placeholder="Ex.: Comercial" className="h-11 bg-white" /></div>
-                    <div className="space-y-2"><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" type="email" required value={regEmail} onChange={e => setRegEmail(e.target.value)} className="h-11 bg-white" /></div>
-                    <div className="space-y-2"><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" type="password" required minLength={6} value={regPass} onChange={e => setRegPass(e.target.value)} className="h-11 bg-white" /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" name="reg-nome" required /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" name="reg-depto" placeholder="Ex.: Comercial" /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" name="reg-email" type="email" required /></div>
+                    <div className="space-y-2"><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" name="reg-pass" type="password" required minLength={6} /></div>
                     <Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Criar conta <ArrowRight className="ml-auto h-4 w-4" /></Button>
                   </form>
                 </TabsContent>
