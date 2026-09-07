@@ -1,131 +1,83 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 const CLIENT_ID = "nextsm-web";
-const REDIRECT_URI = "https://next-sm-iuri-dantas.vercel.app/oauth/callback";
-const OAUTH_STATE_KEY = "nextsm_oauth_state";
-const OAUTH_VERIFIER_KEY = "nextsm_oauth_verifier";
-const OAUTH_NONCE_KEY = "nextsm_oauth_nonce";
-const OAUTH_PROCESSING_KEY = "nextsm_oauth_processing";
+const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
+const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 
-type TokenBridgeResponse = {
-  ok?: boolean;
-  error?: string;
-  redirect_to?: string;
-};
-
-export const Route = createFileRoute("/oauth/callback")({
-  ssr: false,
-  component: OAuthCallback,
-});
+export const Route = createFileRoute("/oauth/callback")({ ssr: false, component: OAuthCallback });
 
 function OAuthCallback() {
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
-    let cancelled = false;
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+    const errorDescription = params.get("error_description");
+
+    if (error) {
+      window.location.replace(`/auth?oauth_error=${encodeURIComponent(errorDescription || error)}`);
+      return;
+    }
+
+    if (!code || !state) {
+      window.location.replace("/auth?oauth_error=callback_invalid");
+      return;
+    }
+
+    const key = `${OAUTH_TXN_PREFIX}${state}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      window.location.replace("/auth?oauth_error=oauth_transaction_not_found");
+      return;
+    }
+
+    let transaction: { verifier: string; nonce: string; createdAt: number };
+    try {
+      transaction = JSON.parse(raw);
+    } catch {
+      localStorage.removeItem(key);
+      window.location.replace("/auth?oauth_error=oauth_transaction_invalid");
+      return;
+    }
+
+    localStorage.removeItem(key);
 
     void (async () => {
-      const query = new URLSearchParams(window.location.search);
-      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const getParam = (name: string) => query.get(name) ?? hash.get(name);
-
-      const code = getParam("code");
-      const returnedState = getParam("state");
-      const oauthError = getParam("error");
-      const errorDescription = getParam("error_description");
-      const expectedState = sessionStorage.getItem(OAUTH_STATE_KEY);
-      const verifier = sessionStorage.getItem(OAUTH_VERIFIER_KEY);
-      const nonce = sessionStorage.getItem(OAUTH_NONCE_KEY);
-      const stateMatches = Boolean(returnedState && expectedState && returnedState === expectedState);
-
-      if (oauthError) {
-        sessionStorage.removeItem(OAUTH_STATE_KEY);
-        sessionStorage.removeItem(OAUTH_VERIFIER_KEY);
-        sessionStorage.removeItem(OAUTH_NONCE_KEY);
-        sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
-        setError(`Autorização recusada: ${errorDescription || oauthError}`);
-        return;
-      }
-
-      if (!code || !returnedState || !expectedState || !stateMatches) {
-        const reason = !code
-          ? "authorization code não recebido"
-          : !returnedState
-            ? "state não recebido pelo callback"
-            : !expectedState
-              ? "state original não encontrado nesta aba"
-              : "state recebido não corresponde ao state original";
-
-        console.error("[NextSM OAuth] callback inválido", {
-          hasCode: Boolean(code),
-          hasReturnedState: Boolean(returnedState),
-          hasExpectedState: Boolean(expectedState),
-          returnedStateLength: returnedState?.length ?? 0,
-          expectedStateLength: expectedState?.length ?? 0,
-          stateMatches,
-          hasVerifier: Boolean(verifier),
-          hasNonce: Boolean(nonce),
+      try {
+        const response = await fetch("/api/oauth/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            grant_type: "authorization_code",
+            client_id: CLIENT_ID,
+            redirect_uri: REDIRECT_URI,
+            code,
+            code_verifier: transaction.verifier,
+            nonce: transaction.nonce,
+          }),
         });
 
-        setError(`Resposta OAuth inválida: ${reason}.`);
-        return;
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload?.redirect_to) {
+          console.error("[NextSM OAuth] token exchange failed", payload);
+          window.location.replace(`/auth?oauth_error=${encodeURIComponent(payload?.error || "oauth_bridge_failed")}`);
+          return;
+        }
+
+        window.location.replace(payload.redirect_to);
+      } catch (exchangeError) {
+        console.error("[NextSM OAuth] token exchange exception", exchangeError);
+        window.location.replace("/auth?oauth_error=oauth_bridge_failed");
       }
-
-      if (!verifier) {
-        setError("PKCE verifier não encontrado. Inicie o login novamente.");
-        return;
-      }
-
-      // Prevent a second callback execution in the same tab from exchanging
-      // the one-time authorization code twice.
-      if (sessionStorage.getItem(OAUTH_PROCESSING_KEY) === returnedState) {
-        return;
-      }
-      sessionStorage.setItem(OAUTH_PROCESSING_KEY, returnedState);
-
-      if (cancelled) return;
-
-      const response = await fetch("/api/oauth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: CLIENT_ID,
-          redirect_uri: REDIRECT_URI,
-          code,
-          code_verifier: verifier,
-        }),
-      });
-
-      const payload = (await response.json()) as TokenBridgeResponse;
-      if (!response.ok || !payload.ok || !payload.redirect_to) {
-        sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
-        setError(payload.error || "Não foi possível concluir a autenticação no NextSM.");
-        return;
-      }
-
-      sessionStorage.removeItem(OAUTH_STATE_KEY);
-      sessionStorage.removeItem(OAUTH_VERIFIER_KEY);
-      sessionStorage.removeItem(OAUTH_NONCE_KEY);
-      sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
-      window.location.replace(payload.redirect_to);
-    })().catch((cause) => {
-      sessionStorage.removeItem(OAUTH_PROCESSING_KEY);
-      setError(cause instanceof Error ? cause.message : "Falha inesperada no callback OAuth.");
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    })();
   }, []);
 
   return (
     <main className="grid min-h-screen place-items-center bg-[#0A1025] px-6 text-white">
-      <div className="max-w-md text-center">
-        <div className="text-lg font-semibold">
-          {error ? "Falha na autenticação" : "Finalizando autenticação…"}
-        </div>
-        {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+      <div className="text-center">
+        <div className="text-lg font-semibold">Finalizando seu acesso…</div>
+        <p className="mt-2 text-sm text-slate-400">Aguarde enquanto concluímos a autenticação.</p>
       </div>
     </main>
   );
