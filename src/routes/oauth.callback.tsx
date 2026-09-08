@@ -3,6 +3,8 @@ import { useEffect } from "react";
 
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 const OAUTH_COOKIE_PREFIX = "nextsm_oauth_txn_cookie:";
+const CLIENT_ID = "nextsm-web";
+const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
 type OAuthTransaction = {
   verifier: string;
@@ -75,9 +77,11 @@ function OAuthCallback() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            client_id: CLIENT_ID,
+            redirect_uri: REDIRECT_URI,
             code,
+            code_verifier: transaction.verifier,
             state,
-            verifier: transaction.verifier,
             nonce: transaction.nonce,
           }),
         });
