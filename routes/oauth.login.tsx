@@ -6,6 +6,8 @@ const CLIENT_ID = "nextsm-web";
 const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
+const OAUTH_COOKIE_PREFIX = "nextsm_oauth_txn:";
+const OAUTH_COOKIE_MAX_AGE = 600;
 
 type OAuthTransaction = {
   verifier: string;
@@ -26,6 +28,11 @@ function randomString(size = 32) {
 async function sha256Base64url(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return base64url(new Uint8Array(digest));
+}
+
+function setTransactionCookie(state: string, transaction: OAuthTransaction) {
+  const value = encodeURIComponent(JSON.stringify(transaction));
+  document.cookie = `${OAUTH_COOKIE_PREFIX}${state}=${value}; Max-Age=${OAUTH_COOKIE_MAX_AGE}; Path=/; Secure; SameSite=Lax`;
 }
 
 export const Route = createFileRoute("/oauth/login")({
@@ -49,7 +56,10 @@ function OAuthLogin() {
         nonce,
         createdAt: Date.now(),
       };
-      localStorage.setItem(`${OAUTH_TXN_PREFIX}${state}`, JSON.stringify(transaction));
+
+      const storageKey = `${OAUTH_TXN_PREFIX}${state}`;
+      localStorage.setItem(storageKey, JSON.stringify(transaction));
+      setTransactionCookie(state, transaction);
 
       const url = new URL(NEXT_ID_AUTHORIZE);
       url.searchParams.set("client_id", CLIENT_ID);
