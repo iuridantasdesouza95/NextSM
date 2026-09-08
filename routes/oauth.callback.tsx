@@ -5,6 +5,28 @@ const CLIENT_ID = "nextsm-web";
 const REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 
+type OAuthTransaction = {
+  verifier: string;
+  nonce: string;
+  createdAt: number;
+};
+
+function getTransactionCookie(state: string) {
+  const name = `${OAUTH_TXN_PREFIX}${state}=`;
+  const cookie = document.cookie.split("; ").find((item) => item.startsWith(name));
+  if (!cookie) return null;
+
+  try {
+    return JSON.parse(decodeURIComponent(cookie.slice(name.length))) as OAuthTransaction;
+  } catch {
+    return null;
+  }
+}
+
+function removeTransactionCookie(state: string) {
+  document.cookie = `${OAUTH_TXN_PREFIX}${state}=; Max-Age=0; Path=/; Secure; SameSite=Lax`;
+}
+
 export const Route = createFileRoute("/oauth/callback")({
   ssr: false,
   component: OAuthCallback,
@@ -30,21 +52,25 @@ function OAuthCallback() {
 
     const key = `${OAUTH_TXN_PREFIX}${state}`;
     const raw = localStorage.getItem(key);
-    if (!raw) {
+    const cookieTransaction = getTransactionCookie(state);
+
+    if (!raw && !cookieTransaction) {
       window.location.replace("/auth?oauth_error=oauth_transaction_not_found");
       return;
     }
 
-    let transaction: { verifier: string; nonce: string; createdAt: number };
+    let transaction: OAuthTransaction;
     try {
-      transaction = JSON.parse(raw);
+      transaction = raw ? (JSON.parse(raw) as OAuthTransaction) : cookieTransaction!;
     } catch {
       localStorage.removeItem(key);
+      removeTransactionCookie(state);
       window.location.replace("/auth?oauth_error=oauth_transaction_invalid");
       return;
     }
 
     localStorage.removeItem(key);
+    removeTransactionCookie(state);
 
     void (async () => {
       try {
