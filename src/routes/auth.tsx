@@ -1,5 +1,5 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,10 +19,6 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({ meta: [{ title: TITULO }, { name: "description", content: DESCRICAO }, { property: "og:title", content: TITULO }, { property: "og:description", content: DESCRICAO }, { property: "og:type", content: "website" }, { property: "og:url", content: URL_PAGINA }, { name: "robots", content: "noindex, follow" }], links: [{ rel: "canonical", href: URL_PAGINA }] }),
   validateSearch: (s: Record<string, unknown>): { next?: string } => ({ next: safeNext(s.next) ?? undefined }),
-  beforeLoad: async ({ search }) => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) { const next = safeNext(search.next); if (next && next !== "/dashboard") throw redirect({ href: next }); throw redirect({ to: "/areas" }); }
-  },
   component: AuthPage,
 });
 
@@ -31,6 +27,25 @@ function AuthPage() {
   const { next } = Route.useSearch();
   const nextPath = safeNext(next) && next !== "/dashboard" ? safeNext(next) : null;
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const finishSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!active || !data.session) return;
+      if (nextPath) { window.location.href = nextPath; return; }
+      await navigate({ to: "/areas", replace: true });
+    };
+    void finishSession();
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active || !session) return;
+      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        if (nextPath) { window.location.href = nextPath; return; }
+        void navigate({ to: "/areas", replace: true });
+      }
+    });
+    return () => { active = false; subscription.subscription.unsubscribe(); };
+  }, [navigate, nextPath]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); const form = new FormData(e.currentTarget as HTMLFormElement);
@@ -57,7 +72,7 @@ function AuthPage() {
         <div className="w-full max-w-md justify-self-center lg:max-w-[460px]"><div className="mb-6 flex justify-center lg:hidden"><NextSMLogo inverse /></div><Card className="nextsm-auth__card border-white/10 bg-white/[0.97] shadow-2xl shadow-black/20"><CardHeader><div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#0066FF]"><span className="h-1.5 w-1.5 rounded-full bg-[#00D4FF]" /> Acesso seguro</div><CardTitle className="text-2xl tracking-tight text-[#0A1025]">Bem-vindo à NextSM</CardTitle><CardDescription>Escolha como deseja acessar o portal.</CardDescription></CardHeader><CardContent>
           <Button type="button" onClick={handleNextIdLogin} className={loginButtonClass} disabled={loading}><KeyRound className="mr-2 h-4 w-4" />Entrar com Next ID<ArrowRight className="ml-auto h-4 w-4" /></Button>
           <div className="my-5 flex items-center gap-3 text-xs text-slate-400"><div className="h-px flex-1 bg-slate-200" /><span>ou entre com sua conta NextSM</span><div className="h-px flex-1 bg-slate-200" /></div>
-          <Tabs defaultValue="login"><TabsList className="grid h-11 w-full grid-cols-2"><TabsTrigger value="login">E-mail e senha</TabsTrigger><TabsTrigger value="register">Criar conta</TabsTrigger></TabsList><TabsContent value="login"><form className="space-y-5 pt-5" onSubmit={handleLogin}><div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" name="login-email" type="email" required /></div><div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" name="login-pass" type="password" required /></div><Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar<ArrowRight className="ml-auto h-4 w-4" /></Button></form></TabsContent><TabsContent value="register"><form className="space-y-4 pt-5" onSubmit={handleSignup}><div><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" name="reg-nome" required /></div><div><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" name="reg-depto" /></div><div><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" name="reg-email" type="email" required /></div><div><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" name="reg-pass" type="password" required minLength={6} /></div><Button type="submit" className={loginButtonClass} disabled={loading}>Criar conta<ArrowRight className="ml-auto h-4 w-4" /></Button></form></TabsContent></Tabs>
+          <Tabs defaultValue="login"><TabsList className="grid h-11 w-full grid-cols-2"><TabsTrigger value="login">E-mail e senha</TabsTrigger><TabsContent value="login"><form className="space-y-5 pt-5" onSubmit={handleLogin}><div className="space-y-2"><Label htmlFor="login-email">E-mail</Label><Input id="login-email" name="login-email" type="email" required /></div><div className="space-y-2"><Label htmlFor="login-pass">Senha</Label><Input id="login-pass" name="login-pass" type="password" required /></div><Button type="submit" className={loginButtonClass} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Entrar<ArrowRight className="ml-auto h-4 w-4" /></Button></form></TabsContent><TabsTrigger value="register">Criar conta</TabsTrigger><TabsContent value="register"><form className="space-y-4 pt-5" onSubmit={handleSignup}><div><Label htmlFor="reg-nome">Nome completo</Label><Input id="reg-nome" name="reg-nome" required /></div><div><Label htmlFor="reg-depto">Departamento</Label><Input id="reg-depto" name="reg-depto" /></div><div><Label htmlFor="reg-email">E-mail corporativo</Label><Input id="reg-email" name="reg-email" type="email" required /></div><div><Label htmlFor="reg-pass">Senha</Label><Input id="reg-pass" name="reg-pass" type="password" required minLength={6} /></div><Button type="submit" className={loginButtonClass} disabled={loading}>Criar conta<ArrowRight className="ml-auto h-4 w-4" /></Button></form></TabsContent></TabsList></Tabs>
         </CardContent></Card><p className="mt-5 pb-2 text-center text-xs text-slate-400">NextSM • Service Desk</p></div>
       </div>
     </div>
