@@ -5,6 +5,7 @@ const NEXT_ID_TOKEN_ENDPOINT = "https://next-id-universe.vercel.app/oauth/token"
 const NEXT_ID_USERINFO_ENDPOINT = "https://next-id-universe.vercel.app/userinfo";
 const ALLOWED_CLIENT_ID = "nextsm-web";
 const ALLOWED_REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
+const LOCAL_SESSION_REDIRECT_URI = "https://next-servicemanagement.vercel.app/auth";
 
 function errorResponse(error: string, status: number, stage?: string) {
   console.error("[Next ID OAuth] bridge error", { error, stage });
@@ -115,6 +116,9 @@ export const Route = createFileRoute("/api/oauth/token")({
           const { data: magicLink, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
             type: "magiclink",
             email: String(profile.email || email),
+            options: {
+              redirectTo: LOCAL_SESSION_REDIRECT_URI,
+            },
           });
 
           if (magicLinkError || !magicLink?.properties?.action_link) {
