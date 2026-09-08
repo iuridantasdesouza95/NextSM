@@ -81,6 +81,7 @@ export const Route = createFileRoute("/api/oauth/token")({
 
           const email = String(userinfo.email).trim().toLowerCase();
           const subject = String(userinfo.sub);
+          const displayName = String(userinfo.name ?? userinfo.full_name ?? email).trim() || email;
 
           const { data: profile, error: profileError } = await supabaseAdmin
             .from("profiles")
@@ -93,37 +94,85 @@ export const Route = createFileRoute("/api/oauth/token")({
             return errorResponse("identity_lookup_failed", 500, "profile_lookup");
           }
 
-          if (!profile) {
-            return errorResponse("local_user_not_provisioned", 403, "profile_lookup");
-          }
+          let localProfile = profile;
+          let magicLink: Awaited<ReturnType<typeof supabaseAdmin.auth.admin.generateLink>>["data"];
 
-          if (profile.ativo === false) {
-            return errorResponse("user_inactive", 403, "profile_lookup");
-          }
+          if (!localProfile) {
+            // The identity is already authenticated and authorized by Next ID.
+            // Here we only provision the application-local representation required
+            // by NextSM. This does not create a new Next ID identity.
+            const generated = await supabaseAdmin.auth.admin.generateLink({
+              type: "magiclink",
+              email,
+              options: {
+                redirectTo: LOCAL_SESSION_REDIRECT_URI,
+                data: { nome: displayName },
+              },
+            });
 
-          if (profile.next_id_subject !== subject) {
-            const { error: mappingError } = await supabaseAdmin
-              .from("profiles")
-              .update({ next_id_subject: subject } as never)
-              .eq("id", profile.id);
-
-            if (mappingError) {
-              console.error("[Next ID OAuth] identity mapping failed", mappingError);
-              return errorResponse("identity_mapping_failed", 500, "profile_mapping");
+            if (generated.error || !generated.data?.user?.id || !generated.data?.properties?.action_link) {
+              console.error("[Next ID OAuth] local auth provisioning failed", generated.error);
+              return errorResponse("local_user_provisioning_failed", 500, "local_provisioning");
             }
+
+            magicLink = generated.data;
+
+            const { data: provisionedProfile, error: provisionError } = await supabaseAdmin
+              .from("profiles")
+              .upsert(
+                {
+                  id: generated.data.user.id,
+                  nome: displayName,
+                  email,
+                  ativo: true,
+                  next_id_subject: subject,
+                },
+                { onConflict: "id" },
+              )
+              .select("id,email,ativo,next_id_subject")
+              .single();
+
+            if (provisionError || !provisionedProfile) {
+              console.error("[Next ID OAuth] local profile provisioning failed", provisionError);
+              return errorResponse("local_profile_provisioning_failed", 500, "local_provisioning");
+            }
+
+            localProfile = provisionedProfile;
+          } else {
+            if (localProfile.ativo === false) {
+              return errorResponse("user_inactive", 403, "profile_lookup");
+            }
+
+            if (localProfile.next_id_subject !== subject) {
+              const { error: mappingError } = await supabaseAdmin
+                .from("profiles")
+                .update({ next_id_subject: subject } as never)
+                .eq("id", localProfile.id);
+
+              if (mappingError) {
+                console.error("[Next ID OAuth] identity mapping failed", mappingError);
+                return errorResponse("identity_mapping_failed", 500, "profile_mapping");
+              }
+            }
+
+            const generated = await supabaseAdmin.auth.admin.generateLink({
+              type: "magiclink",
+              email: String(localProfile.email || email),
+              options: {
+                redirectTo: LOCAL_SESSION_REDIRECT_URI,
+              },
+            });
+
+            if (generated.error || !generated.data?.properties?.action_link) {
+              console.error("[Next ID OAuth] local session creation failed", generated.error);
+              return errorResponse("local_session_creation_failed", 500, "local_session");
+            }
+
+            magicLink = generated.data;
           }
 
-          const { data: magicLink, error: magicLinkError } = await supabaseAdmin.auth.admin.generateLink({
-            type: "magiclink",
-            email: String(profile.email || email),
-            options: {
-              redirectTo: LOCAL_SESSION_REDIRECT_URI,
-            },
-          });
-
-          if (magicLinkError || !magicLink?.properties?.action_link) {
-            console.error("[Next ID OAuth] local session creation failed", magicLinkError);
-            return errorResponse("local_session_creation_failed", 500, "local_session");
+          if (localProfile.ativo === false) {
+            return errorResponse("user_inactive", 403, "profile_lookup");
           }
 
           const headers = new Headers({
@@ -138,7 +187,7 @@ export const Route = createFileRoute("/api/oauth/token")({
 
           return new Response(JSON.stringify({
             ok: true,
-            redirect_to: magicLink.properties.action_link,
+            redirect_to: magicLink?.properties?.action_link,
             token_type: payload.token_type,
             expires_in: payload.expires_in,
             scope: payload.scope,
