@@ -7,12 +7,52 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationBell } from "@/components/NotificationBell";
 import { NextSMLogo } from "@/components/brand/NextSMLogo";
 
+async function waitForAuthenticatedUser() {
+  const initial = await supabase.auth.getSession();
+  if (initial.data.session?.user) {
+    const verified = await supabase.auth.getUser();
+    if (!verified.error && verified.data.user) return verified.data.user;
+  }
+
+  return new Promise<Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"]>((resolve) => {
+    let settled = false;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    const finish = (user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"]) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      subscription?.unsubscribe();
+      resolve(user);
+    };
+
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase.auth.getUser();
+      finish(data.user ?? null);
+    }, 8000);
+
+    const authState = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setTimeout(async () => {
+          const { data } = await supabase.auth.getUser();
+          if (data.user) finish(data.user);
+        }, 0);
+        return;
+      }
+
+      if (event === "SIGNED_OUT") finish(null);
+    });
+
+    subscription = authState.data.subscription;
+  });
+}
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    const user = await waitForAuthenticatedUser();
+    if (!user) throw redirect({ to: "/auth" });
+    return { user };
   },
   component: AppShell,
 });
