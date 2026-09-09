@@ -256,7 +256,7 @@ export const atualizarChamado = createServerFn({ method: "POST" })
     }
     if (!Object.keys(patch).length) return { ok: true, chamado: ticket };
 
-    const { data: updatedRows, error: updateError } = await admin.from("chamados").update(patch as never).eq("id", data.chamadoId).select("*");
+    const { data: updatedRows, error: updateError } = await admin.rpc("nextsm_update_chamado", { _chamado_id: data.chamadoId, _actor_id: context.userId, _patch: patch });
     if (updateError) throw new Error(updateError.message);
     if (!updatedRows || updatedRows.length === 0) throw new Error("O chamado não foi encontrado após a atualização.");
     const updatedTicket = updatedRows[0];
