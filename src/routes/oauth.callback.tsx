@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const OAUTH_TXN_PREFIX = "nextsm_oauth_txn:";
 const OAUTH_COOKIE_PREFIX = "nextsm_oauth_txn_cookie:";
@@ -10,6 +11,13 @@ type OAuthTransaction = {
   verifier: string;
   nonce: string;
   createdAt: number;
+};
+
+type TokenBridgeResponse = {
+  ok?: boolean;
+  access_token?: string;
+  refresh_token?: string;
+  error?: string;
 };
 
 function getTransactionCookie(state: string) {
@@ -86,17 +94,28 @@ function OAuthCallback() {
           }),
         });
 
-        const payload = (await response.json().catch(() => null)) as
-          | { redirect_to?: string; error?: string }
-          | null;
+        const payload = (await response.json().catch(() => null)) as TokenBridgeResponse | null;
 
-        if (!response.ok || !payload?.redirect_to) {
+        if (!response.ok || !payload?.access_token || !payload?.refresh_token) {
           const error = payload?.error ?? "oauth_token_exchange_failed";
           window.location.replace(`/auth?oauth_error=${encodeURIComponent(error)}`);
           return;
         }
 
-        window.location.replace(payload.redirect_to);
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: payload.access_token,
+          refresh_token: payload.refresh_token,
+        });
+
+        if (sessionError) {
+          console.error("[Next ID OAuth] local session installation failed", sessionError);
+          window.location.replace(`/auth?oauth_error=${encodeURIComponent("local_session_install_failed")}`);
+          return;
+        }
+
+        // The local Supabase session is now installed explicitly. There is no
+        // second Next ID redirect and no second authentication/authorization.
+        window.location.replace("/areas");
       } catch {
         window.location.replace("/auth?oauth_error=oauth_token_exchange_failed");
       }
