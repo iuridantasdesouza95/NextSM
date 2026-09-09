@@ -5,11 +5,49 @@ const NEXT_ID_TOKEN_ENDPOINT = "https://next-id-universe.vercel.app/oauth/token"
 const NEXT_ID_USERINFO_ENDPOINT = "https://next-id-universe.vercel.app/userinfo";
 const ALLOWED_CLIENT_ID = "nextsm-web";
 const ALLOWED_REDIRECT_URI = "https://next-servicemanagement.vercel.app/oauth/callback";
-const LOCAL_SESSION_REDIRECT_URI = "https://next-servicemanagement.vercel.app/auth";
 
 function errorResponse(error: string, status: number, stage?: string) {
   console.error("[Next ID OAuth] bridge error", { error, stage });
   return Response.json({ ok: false, error, ...(stage ? { stage } : {}) }, { status });
+}
+
+async function createLocalSession(email: string, redirectTo: string, data?: Record<string, unknown>) {
+  const generated = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: {
+      redirectTo,
+      ...(data ? { data } : {}),
+    },
+  });
+
+  if (generated.error || !generated.data?.properties?.action_link) {
+    return { error: generated.error ?? new Error("magic link was not generated") };
+  }
+
+  // Do not send the browser through Supabase's action-link redirect flow.
+  // Consume the one-time token on the server and return the resulting session
+  // to the OAuth callback, which will install it in the browser explicitly.
+  const actionUrl = new URL(generated.data.properties.action_link);
+  const tokenHash = actionUrl.searchParams.get("token") ?? actionUrl.searchParams.get("token_hash");
+
+  if (!tokenHash) {
+    return { error: new Error("generated magic link did not contain a token") };
+  }
+
+  const verified = await supabaseAdmin.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: "email",
+  });
+
+  if (verified.error || !verified.data.session) {
+    return { error: verified.error ?? new Error("local session was not created") };
+  }
+
+  return {
+    session: verified.data.session,
+    user: generated.data.user,
+  };
 }
 
 export const Route = createFileRoute("/api/oauth/token")({
@@ -95,17 +133,15 @@ export const Route = createFileRoute("/api/oauth/token")({
           }
 
           let localProfile = profile;
-          let magicLink: Awaited<ReturnType<typeof supabaseAdmin.auth.admin.generateLink>>["data"];
+          let session: Awaited<ReturnType<typeof createLocalSession>>["session"];
 
           if (!localProfile) {
-            // The identity is already authenticated and authorized by Next ID.
-            // Here we only provision the application-local representation required
-            // by NextSM. This does not create a new Next ID identity.
+            // Next ID has already authenticated and authorized the identity.
+            // We only provision the corresponding NextSM local user/session.
             const generated = await supabaseAdmin.auth.admin.generateLink({
               type: "magiclink",
               email,
               options: {
-                redirectTo: LOCAL_SESSION_REDIRECT_URI,
                 data: { nome: displayName },
               },
             });
@@ -115,7 +151,23 @@ export const Route = createFileRoute("/api/oauth/token")({
               return errorResponse("local_user_provisioning_failed", 500, "local_provisioning");
             }
 
-            magicLink = generated.data;
+            const actionUrl = new URL(generated.data.properties.action_link);
+            const tokenHash = actionUrl.searchParams.get("token") ?? actionUrl.searchParams.get("token_hash");
+            if (!tokenHash) {
+              return errorResponse("local_session_creation_failed", 500, "local_session");
+            }
+
+            const verified = await supabaseAdmin.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: "email",
+            });
+
+            if (verified.error || !verified.data.session) {
+              console.error("[Next ID OAuth] local auth verification failed", verified.error);
+              return errorResponse("local_session_creation_failed", 500, "local_session");
+            }
+
+            session = verified.data.session;
 
             const { data: provisionedProfile, error: provisionError } = await supabaseAdmin
               .from("profiles")
@@ -155,44 +207,36 @@ export const Route = createFileRoute("/api/oauth/token")({
               }
             }
 
-            const generated = await supabaseAdmin.auth.admin.generateLink({
-              type: "magiclink",
-              email: String(localProfile.email || email),
-              options: {
-                redirectTo: LOCAL_SESSION_REDIRECT_URI,
-              },
-            });
-
-            if (generated.error || !generated.data?.properties?.action_link) {
-              console.error("[Next ID OAuth] local session creation failed", generated.error);
+            const localSession = await createLocalSession(String(localProfile.email || email), "https://next-servicemanagement.vercel.app/auth");
+            if (localSession.error || !localSession.session) {
+              console.error("[Next ID OAuth] local session creation failed", localSession.error);
               return errorResponse("local_session_creation_failed", 500, "local_session");
             }
 
-            magicLink = generated.data;
+            session = localSession.session;
           }
 
           if (localProfile.ativo === false) {
             return errorResponse("user_inactive", 403, "profile_lookup");
           }
 
-          const headers = new Headers({
-            "Content-Type": "application/json",
-            "Cache-Control": "no-store",
-          });
-          const cookieBase = "Path=/; HttpOnly; Secure; SameSite=Lax";
-          headers.append("Set-Cookie", `nextsm_access_token=${encodeURIComponent(String(payload.access_token))}; Max-Age=3600; ${cookieBase}`);
-          if (payload.refresh_token) {
-            headers.append("Set-Cookie", `nextsm_refresh_token=${encodeURIComponent(String(payload.refresh_token))}; Max-Age=2592000; ${cookieBase}`);
-          }
-
-          return new Response(JSON.stringify({
-            ok: true,
-            redirect_to: magicLink?.properties?.action_link,
-            token_type: payload.token_type,
-            expires_in: payload.expires_in,
-            scope: payload.scope,
-            has_id_token: Boolean(payload.id_token),
-          }), { status: 200, headers });
+          return Response.json(
+            {
+              ok: true,
+              access_token: session.access_token,
+              refresh_token: session.refresh_token,
+              expires_in: session.expires_in,
+              expires_at: session.expires_at,
+              token_type: session.token_type,
+              user_id: session.user.id,
+              next_id_access_token: payload.access_token,
+              has_id_token: Boolean(payload.id_token),
+            },
+            {
+              status: 200,
+              headers: { "Cache-Control": "no-store" },
+            },
+          );
         } catch (error) {
           console.error("[Next ID OAuth] token bridge failed", error);
           return errorResponse("oauth_bridge_failed", 500, "unexpected");
