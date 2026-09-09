@@ -22,18 +22,18 @@ async function createLocalSession(email: string, data?: Record<string, unknown>)
     return { error: generated.error ?? new Error("magic link was not generated") };
   }
 
-  // Consume the one-time link on the server. The browser never follows the
-  // Supabase action-link redirect, so there is no second auth redirect/race.
   const actionUrl = new URL(generated.data.properties.action_link);
-  const tokenHash = actionUrl.searchParams.get("token") ?? actionUrl.searchParams.get("token_hash");
+  const tokenHash = actionUrl.searchParams.get("token_hash") ?? actionUrl.searchParams.get("token");
 
   if (!tokenHash) {
     return { error: new Error("generated magic link did not contain a token") };
   }
 
+  // generateLink({ type: "magiclink" }) must be consumed as a magiclink.
+  // Using type=email here makes Supabase reject the first bootstrap attempt.
   const verified = await supabaseAdmin.auth.verifyOtp({
     token_hash: tokenHash,
-    type: "email",
+    type: "magiclink",
   });
 
   if (verified.error || !verified.data.session) {
@@ -132,8 +132,6 @@ export const Route = createFileRoute("/api/oauth/token")({
           let session;
 
           if (!localProfile) {
-            // Next ID has already authenticated and authorized the identity.
-            // We only provision the corresponding NextSM local user/session.
             const localSession = await createLocalSession(email, { nome: displayName });
 
             if (localSession.error || !localSession.session || !localSession.user?.id) {
