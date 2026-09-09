@@ -11,23 +11,19 @@ function errorResponse(error: string, status: number, stage?: string) {
   return Response.json({ ok: false, error, ...(stage ? { stage } : {}) }, { status });
 }
 
-async function createLocalSession(email: string, redirectTo: string, data?: Record<string, unknown>) {
+async function createLocalSession(email: string, data?: Record<string, unknown>) {
   const generated = await supabaseAdmin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: {
-      redirectTo,
-      ...(data ? { data } : {}),
-    },
+    ...(data ? { options: { data } } : {}),
   });
 
   if (generated.error || !generated.data?.properties?.action_link) {
     return { error: generated.error ?? new Error("magic link was not generated") };
   }
 
-  // Do not send the browser through Supabase's action-link redirect flow.
-  // Consume the one-time token on the server and return the resulting session
-  // to the OAuth callback, which will install it in the browser explicitly.
+  // Consume the one-time link on the server. The browser never follows the
+  // Supabase action-link redirect, so there is no second auth redirect/race.
   const actionUrl = new URL(generated.data.properties.action_link);
   const tokenHash = actionUrl.searchParams.get("token") ?? actionUrl.searchParams.get("token_hash");
 
@@ -133,47 +129,25 @@ export const Route = createFileRoute("/api/oauth/token")({
           }
 
           let localProfile = profile;
-          let session: Awaited<ReturnType<typeof createLocalSession>>["session"];
+          let session;
 
           if (!localProfile) {
             // Next ID has already authenticated and authorized the identity.
             // We only provision the corresponding NextSM local user/session.
-            const generated = await supabaseAdmin.auth.admin.generateLink({
-              type: "magiclink",
-              email,
-              options: {
-                data: { nome: displayName },
-              },
-            });
+            const localSession = await createLocalSession(email, { nome: displayName });
 
-            if (generated.error || !generated.data?.user?.id || !generated.data?.properties?.action_link) {
-              console.error("[Next ID OAuth] local auth provisioning failed", generated.error);
+            if (localSession.error || !localSession.session || !localSession.user?.id) {
+              console.error("[Next ID OAuth] local auth provisioning failed", localSession.error);
               return errorResponse("local_user_provisioning_failed", 500, "local_provisioning");
             }
 
-            const actionUrl = new URL(generated.data.properties.action_link);
-            const tokenHash = actionUrl.searchParams.get("token") ?? actionUrl.searchParams.get("token_hash");
-            if (!tokenHash) {
-              return errorResponse("local_session_creation_failed", 500, "local_session");
-            }
-
-            const verified = await supabaseAdmin.auth.verifyOtp({
-              token_hash: tokenHash,
-              type: "email",
-            });
-
-            if (verified.error || !verified.data.session) {
-              console.error("[Next ID OAuth] local auth verification failed", verified.error);
-              return errorResponse("local_session_creation_failed", 500, "local_session");
-            }
-
-            session = verified.data.session;
+            session = localSession.session;
 
             const { data: provisionedProfile, error: provisionError } = await supabaseAdmin
               .from("profiles")
               .upsert(
                 {
-                  id: generated.data.user.id,
+                  id: localSession.user.id,
                   nome: displayName,
                   email,
                   ativo: true,
@@ -207,7 +181,7 @@ export const Route = createFileRoute("/api/oauth/token")({
               }
             }
 
-            const localSession = await createLocalSession(String(localProfile.email || email), "https://next-servicemanagement.vercel.app/auth");
+            const localSession = await createLocalSession(String(localProfile.email || email));
             if (localSession.error || !localSession.session) {
               console.error("[Next ID OAuth] local session creation failed", localSession.error);
               return errorResponse("local_session_creation_failed", 500, "local_session");
@@ -229,7 +203,6 @@ export const Route = createFileRoute("/api/oauth/token")({
               expires_at: session.expires_at,
               token_type: session.token_type,
               user_id: session.user.id,
-              next_id_access_token: payload.access_token,
               has_id_token: Boolean(payload.id_token),
             },
             {
