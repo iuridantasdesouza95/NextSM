@@ -30,21 +30,49 @@ function AuthPage() {
 
   useEffect(() => {
     let active = true;
+    let redirected = false;
+
     const finishSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!active || !data.session) return;
-      if (nextPath) { window.location.href = nextPath; return; }
-      await navigate({ to: "/areas", replace: true });
-    };
-    void finishSession();
-    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!active || !session) return;
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
-        if (nextPath) { window.location.href = nextPath; return; }
-        void navigate({ to: "/areas", replace: true });
+      // The Supabase browser client may still be processing the magic-link
+      // redirect when /auth mounts. Register the auth listener FIRST so we do
+      // not miss the SIGNED_IN/INITIAL_SESSION event, then inspect storage.
+      const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!active || !session || redirected) return;
+        if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+          redirected = true;
+          if (nextPath) { window.location.replace(nextPath); return; }
+          void navigate({ to: "/areas", replace: true });
+        }
+      });
+
+      const { data, error } = await supabase.auth.getSession();
+      if (active && !error && data.session && !redirected) {
+        redirected = true;
+        if (nextPath) { window.location.replace(nextPath); return; }
+        await navigate({ to: "/areas", replace: true });
       }
-    });
-    return () => { active = false; subscription.subscription.unsubscribe(); };
+
+      // Give supabase-js a short window to finish processing a redirect URL.
+      // This prevents the login screen from flashing/being shown when the
+      // magic-link session is established just after the initial getSession().
+      if (active && !redirected) {
+        for (let attempt = 0; attempt < 20 && active && !redirected; attempt += 1) {
+          await new Promise((resolve) => window.setTimeout(resolve, 150));
+          const result = await supabase.auth.getSession();
+          if (result.data.session) {
+            redirected = true;
+            if (nextPath) { window.location.replace(nextPath); return; }
+            await navigate({ to: "/areas", replace: true });
+            break;
+          }
+        }
+      }
+
+      subscription.subscription.unsubscribe();
+    };
+
+    void finishSession();
+    return () => { active = false; };
   }, [navigate, nextPath]);
 
   async function handleLogin(e: React.FormEvent) {
